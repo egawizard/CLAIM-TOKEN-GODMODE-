@@ -1,0 +1,283 @@
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, Coins, TrendingUp, Zap, CheckCircle, ExternalLink } from 'lucide-react';
+
+const GodmodeFrame = () => {
+  const [mounted, setMounted] = useState(false);
+  const [mintCount, setMintCount] = useState(1);
+  const [totalMints, setTotalMints] = useState(0);
+  const [userMints, setUserMints] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [txHash, setTxHash] = useState('');
+  const [error, setError] = useState('');
+
+  const CONTRACT_ADDRESS = '0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305';
+  const TOTAL_MINTS_AVAILABLE = 20000;
+  const MAX_MINTS_PER_USER = 50;
+  const TOKENS_PER_MINT = 45000;
+  const MINT_PRICE = 0.00012;
+
+  useEffect(() => {
+    setMounted(true);
+    loadContractData();
+  }, []);
+
+  const loadContractData = async () => {
+    // Simulate loading contract data
+    // In production, this would fetch from Base mainnet
+    setTotalMints(Math.floor(Math.random() * 5000));
+    setUserMints(Math.floor(Math.random() * 10));
+  };
+
+  const progressPercentage = (totalMints / TOTAL_MINTS_AVAILABLE) * 100;
+  const remainingMints = TOTAL_MINTS_AVAILABLE - totalMints;
+  const userRemainingMints = MAX_MINTS_PER_USER - userMints;
+
+  const handleMint = async () => {
+    setIsLoading(true);
+    setError('');
+    setTxHash('');
+
+    try {
+      // In production, this would interact with Farcaster Frames SDK
+      // and trigger the transaction through Farcaster wallet
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate successful transaction
+      const mockTxHash = '0x' + Math.random().toString(16).substring(2, 66);
+      setTxHash(mockTxHash);
+      setTotalMints(prev => prev + mintCount);
+      setUserMints(prev => prev + mintCount);
+      
+      // Auto-cast after successful mint
+      setTimeout(() => {
+        const castText = `Just claimed ${mintCount * TOKENS_PER_MINT} $GODMODE tokens! 🚀\n\nFREE MINT still available!\n${remainingMints - mintCount} mints remaining.\n\nClaim yours: https://claim-token-godmode.vercel.app/`;
+        console.log('Auto-cast:', castText);
+      }, 1000);
+      
+    } catch (err) {
+      setError(err.message || 'Mint failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!mounted) return null;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-indigo-900 to-black text-white font-sans">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute w-96 h-96 bg-purple-500 rounded-full filter blur-3xl opacity-20 -top-48 -left-48 animate-pulse"></div>
+        <div className="absolute w-96 h-96 bg-indigo-500 rounded-full filter blur-3xl opacity-20 -bottom-48 -right-48 animate-pulse" style={{animationDelay: '1s'}}></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-8 max-w-2xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-block mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 blur-xl opacity-50"></div>
+              <Zap className="relative w-16 h-16 text-yellow-400 mx-auto animate-pulse" />
+            </div>
+          </div>
+          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent">
+            CLAIM $GODMODE
+          </h1>
+          <p className="text-xl text-purple-300 mb-2">FREE MINT • Limited Supply</p>
+          <p className="text-sm text-gray-400">Exclusive for Farcaster Community</p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-purple-800/40 to-indigo-800/40 backdrop-blur-lg rounded-2xl p-4 border border-purple-500/20">
+            <div className="text-xs text-purple-300 mb-1">Total Supply</div>
+            <div className="text-lg font-bold">1B</div>
+          </div>
+          <div className="bg-gradient-to-br from-purple-800/40 to-indigo-800/40 backdrop-blur-lg rounded-2xl p-4 border border-purple-500/20">
+            <div className="text-xs text-purple-300 mb-1">Per Mint</div>
+            <div className="text-lg font-bold">{TOKENS_PER_MINT.toLocaleString()}</div>
+          </div>
+          <div className="bg-gradient-to-br from-purple-800/40 to-indigo-800/40 backdrop-blur-lg rounded-2xl p-4 border border-purple-500/20">
+            <div className="text-xs text-purple-300 mb-1">Max/User</div>
+            <div className="text-lg font-bold">{MAX_MINTS_PER_USER}x</div>
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <div className="bg-gradient-to-br from-purple-800/30 to-indigo-800/30 backdrop-blur-xl rounded-3xl p-6 border border-purple-500/30 shadow-2xl mb-6">
+          {/* Progress Section */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-semibold text-purple-300">Minting Progress</span>
+              <span className="text-sm font-bold text-white">
+                {totalMints.toLocaleString()} / {TOTAL_MINTS_AVAILABLE.toLocaleString()}
+              </span>
+            </div>
+            <div className="relative h-4 bg-black/40 rounded-full overflow-hidden border border-purple-500/30">
+              <div 
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 transition-all duration-500 ease-out"
+                style={{ width: `${progressPercentage}%` }}
+              >
+                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-center text-gray-400">
+              {remainingMints.toLocaleString()} mints remaining
+            </div>
+          </div>
+
+          {/* User Stats */}
+          <div className="bg-black/30 rounded-2xl p-4 mb-6 border border-purple-500/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Coins className="w-5 h-5 text-yellow-400" />
+                <span className="text-sm text-purple-300">Your Mints</span>
+              </div>
+              <span className="text-lg font-bold">{userMints} / {MAX_MINTS_PER_USER}</span>
+            </div>
+            <div className="mt-2 text-xs text-gray-400">
+              {userRemainingMints} mints remaining for you
+            </div>
+          </div>
+
+          {/* Mint Controls */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-purple-300 mb-3">
+              Select Mint Quantity
+            </label>
+            <div className="flex gap-2 mb-4">
+              {[1, 5, 10, 25, 50].map((amount) => (
+                <button
+                  key={amount}
+                  onClick={() => setMintCount(amount)}
+                  disabled={amount > userRemainingMints}
+                  className={`flex-1 py-3 rounded-xl font-semibold transition-all ${
+                    mintCount === amount
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg scale-105'
+                      : amount > userRemainingMints
+                      ? 'bg-gray-700/30 text-gray-500 cursor-not-allowed'
+                      : 'bg-black/40 text-white hover:bg-black/60 border border-purple-500/20'
+                  }`}
+                >
+                  {amount}x
+                </button>
+              ))}
+            </div>
+
+            {/* Mint Summary */}
+            <div className="bg-gradient-to-r from-purple-900/40 to-indigo-900/40 rounded-xl p-4 border border-purple-500/30">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-purple-300">You will receive:</span>
+                <span className="text-lg font-bold text-white">
+                  {(mintCount * TOKENS_PER_MINT).toLocaleString()} $GODMODE
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-purple-300">Cost:</span>
+                <span className="text-lg font-bold text-green-400">
+                  {(mintCount * MINT_PRICE).toFixed(5)} ETH
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mint Button */}
+          <button
+            onClick={handleMint}
+            disabled={isLoading || userRemainingMints === 0 || remainingMints === 0}
+            className="w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-xl hover:shadow-2xl hover:scale-105 flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Processing...
+              </>
+            ) : userRemainingMints === 0 ? (
+              'Max Mints Reached'
+            ) : remainingMints === 0 ? (
+              'Sold Out'
+            ) : (
+              <>
+                <Zap className="w-5 h-5" />
+                MINT NOW - FREE CLAIM
+              </>
+            )}
+          </button>
+
+          {/* Success Message */}
+          {txHash && (
+            <div className="mt-4 p-4 bg-green-900/30 border border-green-500/30 rounded-xl">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-green-400 mb-1">
+                    Mint Successful! 🎉
+                  </p>
+                  <p className="text-xs text-gray-300 mb-2">
+                    Your tokens will appear in your wallet shortly.
+                  </p>
+                  <a
+                    href={`https://basescan.org/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-purple-300 hover:text-purple-200"
+                  >
+                    View on BaseScan
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-900/30 border border-red-500/30 rounded-xl">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-300">{error}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Info Section */}
+        <div className="bg-gradient-to-br from-purple-800/20 to-indigo-800/20 backdrop-blur-lg rounded-2xl p-6 border border-purple-500/20">
+          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-purple-400" />
+            Token Information
+          </h3>
+          <div className="space-y-2 text-sm text-gray-300">
+            <div className="flex justify-between">
+              <span>Contract Address:</span>
+              <a 
+                href={`https://basescan.org/address/${CONTRACT_ADDRESS}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-400 hover:text-purple-300 font-mono text-xs flex items-center gap-1"
+              >
+                {CONTRACT_ADDRESS.slice(0, 6)}...{CONTRACT_ADDRESS.slice(-4)}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <div className="flex justify-between">
+              <span>Network:</span>
+              <span className="font-semibold">Base Mainnet</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Token Symbol:</span>
+              <span className="font-semibold">$GODMODE</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center text-xs text-gray-500">
+          <p>Powered by Base • Built for Farcaster</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default GodmodeFrame;
