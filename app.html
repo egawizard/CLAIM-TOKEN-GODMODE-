@@ -439,17 +439,35 @@
 
                 showStatus('🔗 Connecting to Farcaster wallet...', 'info');
 
+                // Get context first
+                const context = sdk.context;
+                console.log('Context:', context);
+
                 // Request accounts
-                const accounts = await sdk.wallet.ethProvider.request({
-                    method: 'eth_requestAccounts'
-                });
+                let accounts;
+                try {
+                    accounts = await sdk.wallet.ethProvider.request({
+                        method: 'eth_requestAccounts'
+                    });
+                } catch (e) {
+                    console.log('eth_requestAccounts failed, trying eth_accounts:', e);
+                    accounts = await sdk.wallet.ethProvider.request({
+                        method: 'eth_accounts'
+                    });
+                }
 
                 if (!accounts || accounts.length === 0) {
                     throw new Error('No accounts found');
                 }
 
                 userAddress = accounts[0];
-                provider = new window.ethers.providers.Web3Provider(sdk.wallet.ethProvider);
+                
+                // Use simple Web3Provider without extra options
+                provider = new window.ethers.providers.Web3Provider(
+                    sdk.wallet.ethProvider,
+                    'any' // Accept any network
+                );
+                
                 signer = provider.getSigner();
                 contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
@@ -490,13 +508,17 @@
             try {
                 const sdk = window.frameSDK;
                 
-                if (sdk && sdk.wallet) {
+                if (sdk && sdk.wallet && sdk.wallet.ethProvider) {
                     // Use Farcaster wallet
                     showStatus('🔗 Connecting to Farcaster wallet...', 'info');
 
                     const accounts = await sdk.wallet.ethProvider.request({
                         method: 'eth_requestAccounts'
                     });
+
+                    if (!accounts || accounts.length === 0) {
+                        throw new Error('No Farcaster wallet found');
+                    }
 
                     userAddress = accounts[0];
                     provider = new window.ethers.providers.Web3Provider(sdk.wallet.ethProvider);
@@ -537,7 +559,7 @@
                         }
                     }
                 } else {
-                    throw new Error('No wallet found. Please use Farcaster app or install MetaMask.');
+                    throw new Error('Please open in Farcaster app or install MetaMask');
                 }
 
                 contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
