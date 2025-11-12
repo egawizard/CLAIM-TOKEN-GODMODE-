@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLAIM TOKEN GODMODE - FREE MINT</title>
+    
+    <meta name="fc:frame" content="vNext">
+    <meta name="fc:frame:image" content="https://claim-token-godmode.vercel.app/og.png">
+    <meta name="fc:frame:button:1" content="Launch Mint App">
+    <meta name="fc:frame:button:1:action" content="link">
+    <meta name="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/app.html">
+    
+    <meta property="og:title" content="CLAIM TOKEN GODMODE - FREE MINT">
+    <meta property="og:description" content="Mint GODMODE tokens on Base Mainnet! 1B total supply, 50x max per user!">
+    <meta property="og:image" content="https://claim-token-godmode.vercel.app/og.png">
+    <meta property="og:url" content="https://claim-token-godmode.vercel.app">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 72px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+        }
+        
+        .subtitle {
+            font-size: 24px;
+            margin-bottom: 40px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffd700;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 20px 60px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            text-decoration: none;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        
+        .loading {
+            margin-top: 25px;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 600px) {
+            h1 { font-size: 48px; }
+            .subtitle { font-size: 20px; }
+            .stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GODMODE</h1>
+        <p class="subtitle">FREE MINT ON BASE MAINNET</p>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Total Supply</div>
+                <div class="stat-value">1B</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Max Per User</div>
+                <div class="stat-value">50x</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Per Mint</div>
+                <div class="stat-value">45K</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Cost</div>
+                <div class="stat-value">FREE</div>
+            </div>
+        </div>
+        
+        <a href="app.html" class="btn">LAUNCH APP</a>
+        
+        <p class="loading">Redirecting to mint app...</p>
+    </div>
+    
+    <script>
+        setTimeout(function() {
+            window.location.href = 'app.html';
+        }, 2000);
+    </script>
+</body>
+</html>
