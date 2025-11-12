@@ -7,13 +7,17 @@
     
     <!-- Farcaster Frame Meta Tags -->
     <meta property="fc:frame" content="vNext">
-    <meta property="fc:frame:image" content="https://i.imgur.com/placeholder.png">
+    <meta property="fc:frame:image" content="https://claim-token-godmode.vercel.app/frame.png">
+    <meta property="fc:frame:image:aspect_ratio" content="1.91:1">
     <meta property="fc:frame:button:1" content="🚀 MINT NOW">
     <meta property="fc:frame:button:1:action" content="link">
-    <meta property="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app">
+    <meta property="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/app">
+    <meta property="fc:frame:post_url" content="https://claim-token-godmode.vercel.app/api/frame">
+    
+    <!-- Open Graph -->
     <meta property="og:title" content="CLAIM TOKEN $GODMODE - FREE MINT">
     <meta property="og:description" content="Mint $GODMODE tokens on Base Mainnet. 1B total supply, 50x max per user!">
-    <meta property="og:image" content="https://i.imgur.com/placeholder.png">
+    <meta property="og:image" content="https://claim-token-godmode.vercel.app/frame.png">
     
     <style>
         * {
@@ -225,6 +229,16 @@
             border-radius: 12px;
         }
 
+        .network-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 12px;
+            padding: 10px;
+            background: rgba(0, 123, 255, 0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 123, 255, 0.3);
+        }
+
         .status-message {
             text-align: center;
             padding: 15px;
@@ -352,6 +366,7 @@
             </div>
 
             <div id="mintSection" style="display: none;">
+                <div class="network-info" id="networkInfo"></div>
                 <div class="wallet-info" id="walletInfo"></div>
                 <button class="mint-action-btn" id="mintBtn">
                     🚀 MINT NOW
@@ -365,26 +380,24 @@
         <div class="status-message" id="statusMessage"></div>
     </div>
 
-    <!-- Load Scripts in Order -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script type="module">
         import sdk from 'https://esm.sh/@farcaster/frame-sdk@0.1.1';
         window.frameSDK = sdk;
         
-        // Initialize when SDK is ready
         sdk.actions.ready().then(() => {
             console.log('✅ Farcaster SDK ready');
             window.dispatchEvent(new Event('farcaster-ready'));
         }).catch(err => {
-            console.log('Running in standalone mode:', err);
+            console.log('Running in standalone mode');
             window.dispatchEvent(new Event('farcaster-ready'));
         });
     </script>
     
     <script>
-        // Contract Configuration
         const CONTRACT_ADDRESS = '0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305';
         const BASE_CHAIN_ID = 8453;
+        const BASE_CHAIN_ID_HEX = '0x2105';
         const TOKENS_PER_MINT = 45000;
         const MINT_PRICE = '0.00012';
         const MAX_MINTS_PER_USER = 50;
@@ -403,21 +416,18 @@
         let contract = null;
         let userAddress = null;
         let currentMintAmount = 1;
+        let isConnected = false;
 
-        // Wait for both ethers and Farcaster SDK
         async function initApp() {
             console.log('Initializing app...');
             
-            // Wait for ethers
             while (!window.ethers) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             console.log('✅ Ethers loaded');
 
-            // Load contract data
             await loadContractData();
 
-            // Try auto-connect after 1 second
             setTimeout(async () => {
                 if (window.frameSDK && window.frameSDK.wallet) {
                     await autoConnectFarcasterWallet();
@@ -425,10 +435,8 @@
             }, 1000);
         }
 
-        // Wait for Farcaster ready event
         window.addEventListener('farcaster-ready', initApp);
 
-        // Auto-connect Farcaster wallet
         async function autoConnectFarcasterWallet() {
             try {
                 const sdk = window.frameSDK;
@@ -439,18 +447,12 @@
 
                 showStatus('🔗 Connecting to Farcaster wallet...', 'info');
 
-                // Get context first
-                const context = sdk.context;
-                console.log('Context:', context);
-
-                // Request accounts
                 let accounts;
                 try {
                     accounts = await sdk.wallet.ethProvider.request({
                         method: 'eth_requestAccounts'
                     });
                 } catch (e) {
-                    console.log('eth_requestAccounts failed, trying eth_accounts:', e);
                     accounts = await sdk.wallet.ethProvider.request({
                         method: 'eth_accounts'
                     });
@@ -461,34 +463,76 @@
                 }
 
                 userAddress = accounts[0];
+                provider = new window.ethers.providers.Web3Provider(sdk.wallet.ethProvider, 'any');
                 
-                // Use simple Web3Provider without extra options
-                provider = new window.ethers.providers.Web3Provider(
-                    sdk.wallet.ethProvider,
-                    'any' // Accept any network
-                );
+                // Check and switch network if needed
+                await ensureCorrectNetwork(provider, sdk.wallet.ethProvider);
                 
                 signer = provider.getSigner();
                 contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                isConnected = true;
 
-                // Update UI
-                document.getElementById('walletSection').style.display = 'none';
-                document.getElementById('mintSection').style.display = 'block';
-                document.getElementById('walletInfo').textContent = 
-                    `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
-
+                updateUI();
                 await updateUserMints();
                 showStatus('✅ Farcaster wallet connected!', 'success');
 
                 console.log('✅ Auto-connected:', userAddress);
             } catch (error) {
                 console.error('Auto-connect error:', error);
-                console.log('Please click Connect Wallet button');
-                // Don't show error, just let user click connect manually
             }
         }
 
-        // Load contract data
+        async function ensureCorrectNetwork(provider, ethProvider) {
+            try {
+                const network = await provider.getNetwork();
+                console.log('Current network:', network.chainId);
+                
+                if (network.chainId !== BASE_CHAIN_ID) {
+                    console.log('Switching to Base Mainnet...');
+                    showStatus('🔄 Switching to Base Mainnet...', 'info');
+                    
+                    try {
+                        await ethProvider.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: BASE_CHAIN_ID_HEX }],
+                        });
+                        console.log('✅ Switched to Base Mainnet');
+                    } catch (switchError) {
+                        // If network doesn't exist, add it
+                        if (switchError.code === 4902) {
+                            await ethProvider.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [{
+                                    chainId: BASE_CHAIN_ID_HEX,
+                                    chainName: 'Base Mainnet',
+                                    nativeCurrency: {
+                                        name: 'Ethereum',
+                                        symbol: 'ETH',
+                                        decimals: 18
+                                    },
+                                    rpcUrls: ['https://mainnet.base.org'],
+                                    blockExplorerUrls: ['https://basescan.org']
+                                }]
+                            });
+                            console.log('✅ Base Mainnet added');
+                        } else {
+                            throw switchError;
+                        }
+                    }
+                    
+                    // Refresh provider after network change
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    provider = new window.ethers.providers.Web3Provider(ethProvider, 'any');
+                }
+                
+                document.getElementById('networkInfo').textContent = '✅ Connected to Base Mainnet';
+            } catch (error) {
+                console.error('Network switch error:', error);
+                document.getElementById('networkInfo').textContent = '⚠️ Please switch to Base Mainnet';
+                throw error;
+            }
+        }
+
         async function loadContractData() {
             try {
                 const baseProvider = new window.ethers.providers.JsonRpcProvider('https://mainnet.base.org');
@@ -503,15 +547,14 @@
             }
         }
 
-        // Manual Connect Wallet
         document.getElementById('connectBtn').addEventListener('click', async () => {
             try {
+                showStatus('🔗 Connecting wallet...', 'info');
+                
                 const sdk = window.frameSDK;
                 
                 if (sdk && sdk.wallet && sdk.wallet.ethProvider) {
-                    // Use Farcaster wallet
-                    showStatus('🔗 Connecting to Farcaster wallet...', 'info');
-
+                    // Farcaster wallet
                     const accounts = await sdk.wallet.ethProvider.request({
                         method: 'eth_requestAccounts'
                     });
@@ -521,54 +564,31 @@
                     }
 
                     userAddress = accounts[0];
-                    provider = new window.ethers.providers.Web3Provider(sdk.wallet.ethProvider);
+                    provider = new window.ethers.providers.Web3Provider(sdk.wallet.ethProvider, 'any');
+                    
+                    await ensureCorrectNetwork(provider, sdk.wallet.ethProvider);
+                    
                     signer = provider.getSigner();
                 } else if (window.ethereum) {
-                    // Fallback to browser wallet
-                    showStatus('🔗 Connecting to wallet...', 'info');
-                    
+                    // Browser wallet (MetaMask, etc)
                     const accounts = await window.ethereum.request({
                         method: 'eth_requestAccounts'
                     });
                     
                     userAddress = accounts[0];
                     provider = new window.ethers.providers.Web3Provider(window.ethereum);
+                    
+                    await ensureCorrectNetwork(provider, window.ethereum);
+                    
                     signer = provider.getSigner();
-
-                    // Check/switch to Base
-                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-                    if (parseInt(chainId) !== BASE_CHAIN_ID) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_switchEthereumChain',
-                                params: [{ chainId: '0x2105' }],
-                            });
-                        } catch (switchError) {
-                            if (switchError.code === 4902) {
-                                await window.ethereum.request({
-                                    method: 'wallet_addEthereumChain',
-                                    params: [{
-                                        chainId: '0x2105',
-                                        chainName: 'Base Mainnet',
-                                        nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-                                        rpcUrls: ['https://mainnet.base.org'],
-                                        blockExplorerUrls: ['https://basescan.org']
-                                    }]
-                                });
-                            }
-                        }
-                    }
                 } else {
-                    throw new Error('Please open in Farcaster app or install MetaMask');
+                    throw new Error('Please install MetaMask or open in Farcaster app');
                 }
 
                 contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                isConnected = true;
 
-                document.getElementById('walletSection').style.display = 'none';
-                document.getElementById('mintSection').style.display = 'block';
-                document.getElementById('walletInfo').textContent = 
-                    `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
-
+                updateUI();
                 await updateUserMints();
                 showStatus('✅ Wallet connected!', 'success');
             } catch (error) {
@@ -577,7 +597,13 @@
             }
         });
 
-        // Mint controls
+        function updateUI() {
+            document.getElementById('walletSection').style.display = 'none';
+            document.getElementById('mintSection').style.display = 'block';
+            document.getElementById('walletInfo').textContent = 
+                `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+        }
+
         document.getElementById('decreaseBtn').addEventListener('click', () => {
             if (currentMintAmount > 1) {
                 currentMintAmount--;
@@ -600,28 +626,54 @@
                 (parseFloat(MINT_PRICE) * currentMintAmount).toFixed(5) + ' ETH';
         }
 
-        // Mint function
         document.getElementById('mintBtn').addEventListener('click', async () => {
+            if (!isConnected || !contract) {
+                showStatus('❌ Please connect wallet first', 'error');
+                return;
+            }
+
             try {
                 const mintBtn = document.getElementById('mintBtn');
                 mintBtn.disabled = true;
                 mintBtn.innerHTML = '<span class="loading"></span> Minting...';
 
+                // Verify network again before minting
+                const network = await provider.getNetwork();
+                if (network.chainId !== BASE_CHAIN_ID) {
+                    throw new Error('Please switch to Base Mainnet');
+                }
+
+                // Check user mint limit
                 const userMints = await contract.userMintCount(userAddress);
                 if (userMints.toNumber() + currentMintAmount > MAX_MINTS_PER_USER) {
-                    throw new Error('Exceeds maximum mints per user');
+                    throw new Error(`Exceeds maximum ${MAX_MINTS_PER_USER} mints per user`);
                 }
 
                 const value = window.ethers.utils.parseEther(
                     (parseFloat(MINT_PRICE) * currentMintAmount).toString()
                 );
 
-                const tx = await contract.mint(currentMintAmount, { value });
-                showStatus('⏳ Transaction submitted! Waiting for confirmation...', 'info');
+                console.log('Minting:', {
+                    amount: currentMintAmount,
+                    value: value.toString(),
+                    address: userAddress
+                });
 
-                await tx.wait();
+                const tx = await contract.mint(currentMintAmount, { 
+                    value,
+                    gasLimit: 300000 // Add explicit gas limit
+                });
                 
-                showStatus(`🎉 Successfully minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens!`, 'success');
+                showStatus('⏳ Transaction submitted! Waiting for confirmation...', 'info');
+                console.log('Transaction hash:', tx.hash);
+
+                const receipt = await tx.wait();
+                console.log('Transaction confirmed:', receipt);
+                
+                showStatus(
+                    `🎉 Successfully minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens!`,
+                    'success'
+                );
                 
                 await updateUserMints();
                 await loadContractData();
@@ -632,7 +684,19 @@
                 mintBtn.textContent = '🚀 MINT NOW';
             } catch (error) {
                 console.error('Mint error:', error);
-                showStatus('❌ Mint failed: ' + (error.message || 'Unknown error'), 'error');
+                let errorMessage = 'Unknown error';
+                
+                if (error.message.includes('user rejected')) {
+                    errorMessage = 'Transaction rejected by user';
+                } else if (error.message.includes('insufficient funds')) {
+                    errorMessage = 'Insufficient ETH balance';
+                } else if (error.data && error.data.message) {
+                    errorMessage = error.data.message;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+                
+                showStatus('❌ Mint failed: ' + errorMessage, 'error');
                 
                 const mintBtn = document.getElementById('mintBtn');
                 mintBtn.disabled = false;
@@ -640,7 +704,6 @@
             }
         });
 
-        // Share on Farcaster
         document.getElementById('shareBtn').addEventListener('click', () => {
             const text = encodeURIComponent(
                 `Just minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens! 🚀\n\nJoin the FREE MINT now on Base Mainnet!`
