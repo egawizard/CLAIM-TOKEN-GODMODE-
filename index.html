@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CLAIM TOKEN $GODMODE - FREE MINT</title>
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-    <script src="https://unpkg.com/@farcaster/frame-sdk@0.0.1/dist/index.js"></script>
+    <script type="module">
+        import sdk from 'https://esm.sh/@farcaster/frame-sdk@0.1.1';
+        window.sdk = sdk;
+    </script>
     <style>
         * {
             margin: 0;
@@ -378,27 +381,40 @@
         let contract = null;
         let userAddress = null;
         let currentMintAmount = 1;
-        let sdk = null;
+        let frameSDK = null;
+
+        // Wait for SDK to load
+        function waitForSDK() {
+            return new Promise((resolve) => {
+                const checkSDK = setInterval(() => {
+                    if (window.sdk) {
+                        clearInterval(checkSDK);
+                        resolve(window.sdk);
+                    }
+                }, 100);
+            });
+        }
 
         // Initialize Farcaster SDK
         async function initFarcasterSDK() {
             try {
-                // Initialize Farcaster Frame SDK
-                if (window.frameSDK) {
-                    sdk = window.frameSDK;
-                    await sdk.actions.ready();
-                    console.log('Farcaster SDK initialized');
-                    
-                    // Get frame context
-                    const context = await sdk.context;
+                frameSDK = await waitForSDK();
+                
+                // Call ready to signal the frame is ready
+                await frameSDK.actions.ready();
+                console.log('✅ Farcaster SDK ready');
+                
+                // Get context if available
+                const context = frameSDK.context;
+                if (context) {
                     console.log('Frame context:', context);
-                    
-                    showStatus('Farcaster Mini App loaded successfully!', 'info');
-                } else {
-                    console.log('Not in Farcaster frame, running in standalone mode');
                 }
+                
+                showStatus('Farcaster Mini App loaded! Connect your wallet.', 'info');
             } catch (error) {
-                console.error('SDK initialization error:', error);
+                console.error('SDK init error:', error);
+                // Continue in standalone mode
+                showStatus('Running in standalone mode', 'info');
             }
         }
 
@@ -423,25 +439,26 @@
             }
         }
 
-        // Connect Wallet - Compatible with both Farcaster and standalone
+        // Connect Wallet
         document.getElementById('connectBtn').addEventListener('click', async () => {
             try {
                 let connectedAddress = null;
 
-                // Try Farcaster SDK first
-                if (sdk && sdk.wallet) {
+                // Try Farcaster wallet provider first
+                if (frameSDK && frameSDK.wallet) {
                     try {
-                        const wallet = await sdk.wallet.ethProvider.request({
+                        const result = await frameSDK.wallet.ethProvider.request({
                             method: 'eth_requestAccounts'
                         });
-                        connectedAddress = wallet[0];
-                        provider = new ethers.providers.Web3Provider(sdk.wallet.ethProvider);
+                        connectedAddress = result[0];
+                        provider = new ethers.providers.Web3Provider(frameSDK.wallet.ethProvider);
+                        console.log('✅ Connected via Farcaster wallet');
                     } catch (e) {
-                        console.log('Farcaster wallet not available, trying fallback');
+                        console.log('Farcaster wallet not available:', e);
                     }
                 }
 
-                // Fallback to window.ethereum
+                // Fallback to regular Web3 provider
                 if (!connectedAddress && window.ethereum) {
                     const accounts = await window.ethereum.request({ 
                         method: 'eth_requestAccounts' 
@@ -453,6 +470,7 @@
                         method: 'eth_chainId' 
                     });
 
+                    // Switch to Base Mainnet if needed
                     if (parseInt(chainId) !== BASE_CHAIN_ID) {
                         try {
                             await window.ethereum.request({
@@ -478,10 +496,11 @@
                             }
                         }
                     }
+                    console.log('✅ Connected via Web3 provider');
                 }
 
                 if (!connectedAddress) {
-                    throw new Error('No wallet available');
+                    throw new Error('No wallet available. Please use Farcaster app or install a Web3 wallet.');
                 }
 
                 signer = provider.getSigner();
@@ -494,10 +513,10 @@
                     `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
 
                 await updateUserMints();
-                showStatus('Wallet connected successfully!', 'success');
+                showStatus('✅ Wallet connected successfully!', 'success');
             } catch (error) {
                 console.error('Connection error:', error);
-                showStatus('Failed to connect wallet. Please try again.', 'error');
+                showStatus('❌ ' + error.message, 'error');
             }
         });
 
@@ -541,11 +560,11 @@
                 );
 
                 const tx = await contract.mint(currentMintAmount, { value });
-                showStatus('Transaction submitted! Waiting for confirmation...', 'info');
+                showStatus('⏳ Transaction submitted! Waiting for confirmation...', 'info');
 
                 await tx.wait();
                 
-                showStatus(`Successfully minted ${currentMintAmount * TOKENS_PER_MINT} $GODMODE tokens! 🎉`, 'success');
+                showStatus(`🎉 Successfully minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens!`, 'success');
                 
                 await updateUserMints();
                 await loadContractData();
@@ -556,7 +575,7 @@
                 mintBtn.textContent = '🚀 MINT NOW';
             } catch (error) {
                 console.error('Mint error:', error);
-                showStatus('Mint failed: ' + (error.message || 'Unknown error'), 'error');
+                showStatus('❌ Mint failed: ' + (error.message || 'Unknown error'), 'error');
                 
                 const mintBtn = document.getElementById('mintBtn');
                 mintBtn.disabled = false;
@@ -567,15 +586,16 @@
         // Share on Farcaster
         document.getElementById('shareBtn').addEventListener('click', () => {
             const text = encodeURIComponent(
-                `Just minted ${currentMintAmount * TOKENS_PER_MINT} $GODMODE tokens! 🚀\n\nJoin the FREE MINT now on Base Mainnet!\n\n`
+                `Just minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens! 🚀\n\nJoin the FREE MINT now on Base Mainnet!`
             );
             const url = encodeURIComponent('https://claim-token-godmode.vercel.app/');
+            const castUrl = `https://warpcast.com/~/compose?text=${text}&embeds[]=${url}`;
             
-            // Try Farcaster SDK first
-            if (sdk && sdk.actions && sdk.actions.openUrl) {
-                sdk.actions.openUrl(`https://warpcast.com/~/compose?text=${text}&embeds[]=${url}`);
+            // Use Farcaster SDK if available
+            if (frameSDK && frameSDK.actions && frameSDK.actions.openUrl) {
+                frameSDK.actions.openUrl(castUrl);
             } else {
-                window.open(`https://warpcast.com/~/compose?text=${text}&embeds[]=${url}`, '_blank');
+                window.open(castUrl, '_blank');
             }
         });
 
