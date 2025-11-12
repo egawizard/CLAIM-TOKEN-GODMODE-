@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CLAIM TOKEN $GODMODE - FREE MINT</title>
+
+  <!-- Farcaster Mini App Meta -->
+  <meta name="fc:miniapp" content='{"title":"CLAIM TOKEN $GODMODE FREE MINT","action_url":"https://claim-token-godmode.vercel.app/","image":"https://claim-token-godmode.vercel.app/hero.jpg","description":"Claim your free $GODMODE token on Base. One-click mint for Farcaster users."}'>
+
+  <!-- OpenGraph / Preview Meta -->
+  <meta property="og:title" content="CLAIM TOKEN $GODMODE — FREE MINT">
+  <meta property="og:description" content="Free mint for Farcaster users — max 50 per wallet. Built on Base.">
+  <meta property="og:image" content="https://claim-token-godmode.vercel.app/hero.jpg">
+  <meta property="og:url" content="https://claim-token-godmode.vercel.app/">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <img src="hero.jpg" class="banner" alt="$GODMODE banner">
+    <h1>CLAIM TOKEN $GODMODE</h1>
+    <p>Free mint for Farcaster users (Base Mainnet)</p>
+
+    <button id="connectButton">Connect Wallet</button>
+    <button id="mintButton" disabled>Mint $GODMODE</button>
+
+    <p id="status"></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
