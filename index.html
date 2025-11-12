@@ -14,7 +14,7 @@
     <meta property="fc:frame:button:2" content="View Contract" />
     <meta property="fc:frame:button:2:action" content="link" />
     <meta property="fc:frame:button:2:target" content="https://basescan.org/address/0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305" />
-    <meta property="fc:frame:post_url" content="https://claim-token-godmode.netlify.app/api/frame" />
+    <meta property="fc:frame:post_url" content="https://claim-token-godmode.netlify.app/.netlify/functions/frame" />
     
     <meta property="og:title" content="CLAIM TOKEN GODMODE - FREE MINT" />
     <meta property="og:description" content="Mint GODMODE tokens on Base Mainnet! 1B supply, 50x max per user!" />
@@ -67,6 +67,10 @@
             font-weight: 900;
             text-transform: uppercase;
         }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 215, 0, 0.6);
+        }
         @media (max-width: 600px) {
             h1 { font-size: 48px; }
             .stats { grid-template-columns: 1fr; }
@@ -98,7 +102,7 @@
         </div>
         
         <a href="app.html" class="btn">LAUNCH APP</a>
-        <p style="margin-top: 20px; opacity: 0.7;">Redirecting to mint app...</p>
+        <p style="margin-top: 20px; opacity: 0.7; font-size: 14px;">Redirecting to mint app...</p>
     </div>
     
     <script>
@@ -106,4 +110,3 @@
     </script>
 </body>
 </html>
-
