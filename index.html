@@ -5,49 +5,134 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CLAIM TOKEN $GODMODE - FREE MINT</title>
     
-    <!-- Farcaster Frame Meta Tags (untuk tombol di cast) -->
+    <!-- Farcaster Frame Meta Tags -->
     <meta property="fc:frame" content="vNext">
     <meta property="fc:frame:image" content="https://claim-token-godmode.vercel.app/frame.png">
     <meta property="fc:frame:image:aspect_ratio" content="1.91:1">
-    <meta property="fc:frame:button:1" content="🚀 MINT NOW">
+    <meta property="fc:frame:button:1" content="🚀 OPEN MINT APP">
     <meta property="fc:frame:button:1:action" content="link">
     <meta property="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/app">
     
-    <!-- Open Graph Meta Tags -->
+    <!-- Open Graph -->
     <meta property="og:title" content="CLAIM TOKEN $GODMODE - FREE MINT">
-    <meta property="og:description" content="🔥 Mint $GODMODE tokens on Base Mainnet! 1B total supply, max 50x per user!">
+    <meta property="og:description" content="🔥 Mint $GODMODE tokens on Base Mainnet! 1B total supply, max 50x per user! FREE MINT NOW!">
     <meta property="og:image" content="https://claim-token-godmode.vercel.app/frame.png">
     <meta property="og:url" content="https://claim-token-godmode.vercel.app">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CLAIM TOKEN $GODMODE - FREE MINT">
+    <meta name="twitter:description" content="🔥 Mint $GODMODE tokens on Base Mainnet!">
+    <meta name="twitter:image" content="https://claim-token-godmode.vercel.app/frame.png">
     
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            font-family: -apple-system, sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
+            overflow: hidden;
         }
         
         .container {
             text-align: center;
             padding: 40px;
+            max-width: 600px;
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo {
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
         
         h1 {
-            font-size: 64px;
+            font-size: 72px;
             margin-bottom: 20px;
             background: linear-gradient(135deg, #ffd700, #ffed4e);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px rgba(255, 215, 0, 0.5);
+            font-weight: 900;
+            letter-spacing: 2px;
         }
         
-        p {
+        .subtitle {
             font-size: 24px;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
+            opacity: 0.95;
+            font-weight: 600;
+        }
+        
+        .description {
+            font-size: 18px;
+            margin-bottom: 40px;
+            opacity: 0.85;
+            line-height: 1.6;
+        }
+        
+        .highlight {
+            color: #ffd700;
+            font-weight: 700;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffd700;
         }
         
         .btn {
@@ -56,35 +141,149 @@
             background: linear-gradient(135deg, #ffd700, #ffed4e);
             color: #000;
             text-decoration: none;
-            border-radius: 12px;
+            border-radius: 16px;
             font-size: 24px;
-            font-weight: bold;
-            transition: transform 0.2s;
+            font-weight: 900;
+            transition: all 0.3s;
+            box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            cursor: pointer;
         }
         
         .btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(255, 215, 0, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
         }
         
         .loading {
-            margin-top: 20px;
+            margin-top: 25px;
             opacity: 0.7;
+            font-size: 14px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+        
+        .features {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .feature-icon {
+            font-size: 24px;
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 48px;
+            }
+            
+            .subtitle {
+                font-size: 20px;
+            }
+            
+            .description {
+                font-size: 16px;
+            }
+            
+            .btn {
+                padding: 18px 50px;
+                font-size: 20px;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>$GODMODE</h1>
-        <p>FREE MINT ON BASE MAINNET</p>
-        <a href="/app" class="btn">🚀 LAUNCH APP</a>
-        <p class="loading">Redirecting to app...</p>
+        <div class="logo">
+            <h1>$GODMODE</h1>
+        </div>
+        
+        <p class="subtitle">🔥 FREE MINT ON BASE MAINNET 🔥</p>
+        
+        <p class="description">
+            Join the revolution! Mint your <span class="highlight">$GODMODE</span> tokens now.<br>
+            Limited time offer - Don't miss out!
+        </p>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Total Supply</div>
+                <div class="stat-value">1B</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Per Mint</div>
+                <div class="stat-value">45K</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Max/User</div>
+                <div class="stat-value">50x</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Cost</div>
+                <div class="stat-value">FREE*</div>
+            </div>
+        </div>
+        
+        <a href="/app" class="btn">🚀 LAUNCH MINT APP</a>
+        
+        <p class="loading">⏳ Loading mint application...</p>
+        
+        <div class="features">
+            <div class="feature">
+                <span class="feature-icon">⚡</span>
+                <span>Instant Mint</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🔒</span>
+                <span>Secure Smart Contract</span>
+            </div>
+            <div class="feature">
+                <span class="feature-icon">💎</span>
+                <span>Base Network</span>
+            </div>
+        </div>
     </div>
     
     <script>
-        // Auto redirect to app after 1 second
+        // Auto redirect after 2 seconds
         setTimeout(() => {
             window.location.href = '/app';
-        }, 1000);
+        }, 2000);
+        
+        // Or immediately on button click
+        document.querySelector('.btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/app';
+        });
     </script>
 </body>
 </html>
