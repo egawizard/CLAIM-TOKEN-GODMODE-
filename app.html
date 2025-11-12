@@ -434,53 +434,163 @@
         async function initApp() {
             console.log('Initializing app...');
             
+            // Wait for ethers to load
             while (!window.ethers) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             console.log('✅ Ethers loaded');
 
+            // Load contract data immediately
             await loadContractData();
 
-            setTimeout(async () => {
-                if (window.frameSDK && window.frameSDK.wallet) {
+            // Auto-connect if in Farcaster
+            if (window.isFarcasterFrame) {
+                console.log('Detected Farcaster Frame mode');
+                setTimeout(async () => {
                     await autoConnectFarcasterWallet();
-                }
-            }, 1000);
+                }, 500);
+            } else {
+                console.log('Standalone mode - manual connect required');
+            }
         }
 
+        // Start initialization when ready
         window.addEventListener('farcaster-ready', initApp);
 
         async function autoConnectFarcasterWallet() {
             try {
                 const sdk = window.frameSDK;
-                if (!sdk || !sdk.wallet || !sdk.wallet.ethProvider) {
+                if (!sdk || !sdk.wallet) {
                     console.log('Farcaster wallet not available');
                     return;
                 }
 
+                console.log('Attempting Farcaster wallet connection...');
                 showStatus('🔗 Connecting to Farcaster wallet...', 'info');
 
+                // Check if ethProvider is available
+                if (!sdk.wallet.ethProvider) {
+                    console.log('No ethProvider found');
+                    return;
+                }
+
+                // Get wallet address
                 let accounts;
                 try {
-                    accounts = await sdk.wallet.ethProvider.request({
-                        method: 'eth_requestAccounts'
-                    });
-                } catch (e) {
+                    // Try eth_accounts first (doesn't require permission)
                     accounts = await sdk.wallet.ethProvider.request({
                         method: 'eth_accounts'
                     });
+                    
+                    // If no accounts, request permission
+                    if (!accounts || accounts.length === 0) {
+                        accounts = await sdk.wallet.ethProvider.request({
+                            method: 'eth_requestAccounts'
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to get accounts:', e);
+                    return;
                 }
 
                 if (!accounts || accounts.length === 0) {
-                    throw new Error('No accounts found');
+                    console.log('No accounts found');
+                    return;
                 }
 
                 userAddress = accounts[0];
-                provider = new window.ethers.providers.Web3Provider(sdk.wallet.ethProvider, 'any');
+                console.log('Got address:', userAddress);
                 
-                // Check and switch network if needed
-                await ensureCorrectNetwork(provider, sdk.wallet.ethProvider);
+                // Create Farcaster-compatible provider
+                const FarcasterProvider = class extends window.ethers.providers.BaseProvider {
+                    constructor(ethProvider) {
+                        super(BASE_CHAIN_ID);
+                        this.ethProvider = ethProvider;
+                    }
+                    
+                    async perform(method, params) {
+                        if (method === 'getTransactionReceipt') {
+                            const receipt = await this.ethProvider.request({
+                                method: 'eth_getTransactionReceipt',
+                                params: [params.transactionHash]
+                            });
+                            return receipt;
+                        }
+                        
+                        if (method === 'getBlock') {
+                            const block = await this.ethProvider.request({
+                                method: 'eth_getBlockByNumber',
+                                params: [params.blockTag || 'latest', false]
+                            });
+                            return block;
+                        }
+                        
+                        if (method === 'call') {
+                            return await this.ethProvider.request({
+                                method: 'eth_call',
+                                params: [params.transaction, 'latest']
+                            });
+                        }
+                        
+                        if (method === 'estimateGas') {
+                            return await this.ethProvider.request({
+                                method: 'eth_estimateGas',
+                                params: [params.transaction]
+                            });
+                        }
+                        
+                        if (method === 'sendTransaction') {
+                            return await this.ethProvider.request({
+                                method: 'eth_sendTransaction',
+                                params: [params.signedTransaction]
+                            });
+                        }
+                        
+                        throw new Error(`Unsupported method: ${method}`);
+                    }
+                    
+                    getSigner() {
+                        return new FarcasterSigner(this.ethProvider, this);
+                    }
+                };
                 
+                const FarcasterSigner = class extends window.ethers.Signer {
+                    constructor(ethProvider, provider) {
+                        super();
+                        this.ethProvider = ethProvider;
+                        this.provider = provider;
+                    }
+                    
+                    async getAddress() {
+                        const accounts = await this.ethProvider.request({
+                            method: 'eth_accounts'
+                        });
+                        return accounts[0];
+                    }
+                    
+                    async signMessage(message) {
+                        const address = await this.getAddress();
+                        return await this.ethProvider.request({
+                            method: 'personal_sign',
+                            params: [message, address]
+                        });
+                    }
+                    
+                    async sendTransaction(transaction) {
+                        const tx = await window.ethers.utils.resolveProperties(transaction);
+                        const hash = await this.ethProvider.request({
+                            method: 'eth_sendTransaction',
+                            params: [tx]
+                        });
+                        return this.provider.getTransaction(hash);
+                    }
+                    
+                    connect(provider) {
+                        return new FarcasterSigner(this.ethProvider, provider);
+                    }
+                };
+                
+                provider = new FarcasterProvider(sdk.wallet.ethProvider);
                 signer = provider.getSigner();
                 contract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
                 isConnected = true;
@@ -489,9 +599,10 @@
                 await updateUserMints();
                 showStatus('✅ Farcaster wallet connected!', 'success');
 
-                console.log('✅ Auto-connected:', userAddress);
+                console.log('✅ Auto-connected successfully');
             } catch (error) {
                 console.error('Auto-connect error:', error);
+                // Don't show error to user, just log it
             }
         }
 
@@ -650,14 +761,11 @@
                 mintBtn.disabled = true;
                 mintBtn.innerHTML = '<span class="loading"></span> Minting...';
 
-                // Verify network again before minting
-                const network = await provider.getNetwork();
-                if (network.chainId !== BASE_CHAIN_ID) {
-                    throw new Error('Please switch to Base Mainnet');
-                }
-
-                // Check user mint limit
-                const userMints = await contract.userMintCount(userAddress);
+                // Check user mint limit first (using read-only provider)
+                const baseProvider = new window.ethers.providers.JsonRpcProvider('https://mainnet.base.org');
+                const readContract = new window.ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, baseProvider);
+                
+                const userMints = await readContract.userMintCount(userAddress);
                 if (userMints.toNumber() + currentMintAmount > MAX_MINTS_PER_USER) {
                     throw new Error(`Exceeds maximum ${MAX_MINTS_PER_USER} mints per user`);
                 }
@@ -666,32 +774,77 @@
                     (parseFloat(MINT_PRICE) * currentMintAmount).toString()
                 );
 
-                console.log('Minting:', {
+                console.log('Preparing mint:', {
                     amount: currentMintAmount,
                     value: value.toString(),
+                    valueInEth: window.ethers.utils.formatEther(value),
                     address: userAddress
                 });
 
-                const tx = await contract.mint(currentMintAmount, { 
-                    value,
-                    gasLimit: 300000 // Add explicit gas limit
-                });
+                // Prepare transaction
+                const txData = contract.interface.encodeFunctionData('mint', [currentMintAmount]);
+                
+                let txHash;
+                
+                if (window.isFarcasterFrame && window.frameSDK && window.frameSDK.wallet) {
+                    // Farcaster transaction
+                    console.log('Sending via Farcaster wallet...');
+                    txHash = await window.frameSDK.wallet.ethProvider.request({
+                        method: 'eth_sendTransaction',
+                        params: [{
+                            from: userAddress,
+                            to: CONTRACT_ADDRESS,
+                            data: txData,
+                            value: '0x' + value.toHexString().slice(2),
+                            gas: '0x493e0' // 300000 in hex
+                        }]
+                    });
+                } else {
+                    // Regular wallet transaction
+                    const tx = await contract.mint(currentMintAmount, { 
+                        value,
+                        gasLimit: 300000
+                    });
+                    txHash = tx.hash;
+                }
                 
                 showStatus('⏳ Transaction submitted! Waiting for confirmation...', 'info');
-                console.log('Transaction hash:', tx.hash);
+                console.log('Transaction hash:', txHash);
 
-                const receipt = await tx.wait();
-                console.log('Transaction confirmed:', receipt);
+                // Wait for confirmation
+                let confirmed = false;
+                let attempts = 0;
                 
-                showStatus(
-                    `🎉 Successfully minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens!`,
-                    'success'
-                );
+                while (!confirmed && attempts < 60) { // 60 attempts = 2 minutes
+                    try {
+                        const receipt = await baseProvider.getTransactionReceipt(txHash);
+                        if (receipt && receipt.confirmations >= 1) {
+                            confirmed = true;
+                            console.log('Transaction confirmed:', receipt);
+                            
+                            showStatus(
+                                `🎉 Successfully minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens!`,
+                                'success'
+                            );
+                            
+                            await updateUserMints();
+                            await loadContractData();
+                            
+                            document.getElementById('shareBtn').style.display = 'block';
+                        }
+                    } catch (e) {
+                        // Receipt not ready yet
+                    }
+                    
+                    if (!confirmed) {
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                        attempts++;
+                    }
+                }
                 
-                await updateUserMints();
-                await loadContractData();
-                
-                document.getElementById('shareBtn').style.display = 'block';
+                if (!confirmed) {
+                    showStatus('⏳ Transaction is pending. Check your wallet for status.', 'info');
+                }
                 
                 mintBtn.disabled = false;
                 mintBtn.textContent = '🚀 MINT NOW';
@@ -699,7 +852,7 @@
                 console.error('Mint error:', error);
                 let errorMessage = 'Unknown error';
                 
-                if (error.message.includes('user rejected')) {
+                if (error.message.includes('user rejected') || error.code === 4001) {
                     errorMessage = 'Transaction rejected by user';
                 } else if (error.message.includes('insufficient funds')) {
                     errorMessage = 'Insufficient ETH balance';
