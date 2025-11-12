@@ -1,182 +1,131 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CLAIM TOKEN $GODMODE — Free Mint</title>
-  <meta name="fc:miniapp" content='{"title": "CLAIM TOKEN $GODMODE FREE MINT","description": "Claim $GODMODE Token on Base Mainnet — Free Mint (with small fee)","action": "/","image": "/splash.png"}' />
-  <style>
-    body {
-      background: radial-gradient(circle at top left, #8b5cf6 0%, #0b0f14 70%);
-      color: #e6eef8;
-      font-family: Inter, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      padding: 20px;
-    }
-    .app {
-      width: 480px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-      text-align: center;
-    }
-    h1 { font-size: 22px; margin-bottom: 10px; }
-    .muted { opacity: 0.8; font-size: 13px; }
-    button {
-      background: linear-gradient(90deg,#8b5cf6,#06b6d4);
-      border: none;
-      border-radius: 10px;
-      padding: 12px 18px;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    .progress {
-      height: 14px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 10px;
-      overflow: hidden;
-      margin: 12px 0;
-    }
-    .progress > i {
-      display: block;
-      height: 100%;
-      width: 0;
-      background: linear-gradient(90deg,#06b6d4,#60a5fa);
-      transition: width .5s ease;
-    }
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #061025;
-      color: white;
-      padding: 10px 14px;
-      border-radius: 8px;
-      display: none;
-    }
-    input[type=number] {
-      width: 80px;
-      text-align: center;
-      border-radius: 8px;
-      border: none;
-      background: rgba(255,255,255,0.1);
-      color: white;
-      padding: 8px;
-      margin-top: 8px;
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <h1>$GODMODE FREE MINT</h1>
-    <div class="muted">Base Mainnet • Max 50 mints per user</div>
-    <p>Mint and claim your $GODMODE tokens directly inside Farcaster.</p>
-    <input id="mintCount" type="number" min="1" max="50" value="1" />
-    <br/>
-    <button id="connect">Connect Wallet</button>
-    <button id="mint">Mint Tokens</button>
-    <div class="progress"><i id="bar"></i></div>
-    <div id="progressText" class="muted">Loading mint progress...</div>
-    <div id="status" class="muted">Not connected</div>
-  </div>
-  <div class="toast" id="toast"></div>
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-  <script type="module">
-    import { sdk } from "https://esm.sh/@farcaster/miniapp-sdk";
-    import { ethers } from "https://esm.sh/ethers@6.8.3";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-    // ✅ Hilangkan splash screen Farcaster
-    await sdk.actions.ready();
+/**
+ * @title GODMODE Token
+ * @dev ERC-20 Token for Farcaster Mini App
+ * 
+ * Tokenomics:
+ * - Total Supply: 1,000,000,000 (1B) tokens
+ * - Mintable Supply: 900,000,000 (900M) tokens
+ * - Treasury Reserve: 100,000,000 (100M) tokens
+ * - Tokens per Mint: 45,000 tokens
+ * - Total Mints Available: 20,000
+ * - Mint Price: 0.00012 ETH (Base Mainnet)
+ * - Max Mints per User: 50
+ */
+contract GODMODE is ERC20, ReentrancyGuard {
+    // Constants
+    uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1 billion tokens
+    uint256 public constant MINTABLE_SUPPLY = 900_000_000 * 10**18; // 900 million tokens
+    uint256 public constant TREASURY_RESERVE = 100_000_000 * 10**18; // 100 million tokens
+    uint256 public constant TOKENS_PER_MINT = 45_000 * 10**18; // 45,000 tokens per mint
+    uint256 public constant TOTAL_MINTS_AVAILABLE = 20_000; // 20,000 total mints
+    uint256 public constant MINT_PRICE = 0.00012 ether; // 0.00012 ETH
+    uint256 public constant MAX_MINTS_PER_USER = 50; // Maximum 50 mints per user
 
-    const CONTRACT = "0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305";
-    const ABI = [
-      {"inputs":[{"internalType":"uint256","name":"mintCount","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"payable","type":"function"},
-      {"inputs":[],"name":"remainingMints","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
-    ];
+    // Treasury wallet address
+    address public immutable treasury;
+    
+    // Owner address for emergency functions
+    address public immutable owner;
 
-    const connectBtn = document.getElementById("connect"),
-          mintBtn = document.getElementById("mint"),
-          toast = document.getElementById("toast"),
-          bar = document.getElementById("bar"),
-          progressText = document.getElementById("progressText"),
-          status = document.getElementById("status");
+    // Minting tracking
+    uint256 public totalMintCount;
+    mapping(address => uint256) public userMintCount;
 
-    let signer, contract;
+    // Events
+    event TokensMinted(address indexed user, uint256 amount, uint256 mintNumber);
+    event TreasuryWithdrawal(address indexed treasury, uint256 amount);
 
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.style.display = "block";
-      setTimeout(()=>toast.style.display="none",3000);
+    // Modifier
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function");
+        _;
     }
 
-    async function updateProgress(){
-      if(!contract) return;
-      const total = 20000;
-      try {
-        const remaining = await contract.remainingMints();
-        const minted = total - Number(remaining);
-        const pct = (minted / total) * 100;
-        bar.style.width = pct + "%";
-        progressText.textContent = `${minted} / ${total} mints`;
-      } catch(e){
-        console.error(e);
-      }
+    /**
+     * @dev Constructor - Deploys the GODMODE token
+     * Automatically mints 100M treasury reserve to specified treasury address
+     */
+    constructor() ERC20("GODMODE", "GODMODE") {
+        // Set deployer as owner
+        owner = msg.sender;
+        
+        // Treasury address for Base Mainnet
+        treasury = 0xb9AE3cDFA1ca0484E24E465Df7F49aDBd175B642;
+        
+        // Mint treasury reserve directly to treasury wallet
+        _mint(treasury, TREASURY_RESERVE);
     }
 
-    async function connectWallet(){
-      try {
-        const provider = await sdk.wallet.getEthereumProvider();
-        if(!provider) return showToast("Open inside Farcaster app");
+    /**
+     * @dev Mint tokens by paying the mint price
+     * @param mintCount Number of times to mint (each mint = 45,000 tokens)
+     */
+    function mint(uint256 mintCount) external payable nonReentrant {
+        require(mintCount > 0, "Mint count must be greater than 0");
+        require(totalMintCount + mintCount <= TOTAL_MINTS_AVAILABLE, "Exceeds total mint limit");
+        require(userMintCount[msg.sender] + mintCount <= MAX_MINTS_PER_USER, "Exceeds user mint limit");
+        require(msg.value == MINT_PRICE * mintCount, "Incorrect ETH amount");
 
-        const browserProvider = new ethers.BrowserProvider(provider);
-        signer = await browserProvider.getSigner();
-        const address = await signer.getAddress();
-        status.textContent = "Connected: " + address.slice(0,8) + "...";
-        showToast("Wallet connected");
+        uint256 tokensToMint = TOKENS_PER_MINT * mintCount;
+        
+        // Update counters
+        totalMintCount += mintCount;
+        userMintCount[msg.sender] += mintCount;
 
-        contract = new ethers.Contract(CONTRACT, ABI, signer);
-        connectBtn.style.display = "none";
-        await updateProgress();
-      } catch(e) {
-        console.error(e);
-        showToast("Failed to connect wallet");
-      }
+        // Mint tokens to user
+        _mint(msg.sender, tokensToMint);
+
+        // Transfer ETH to treasury
+        (bool success, ) = treasury.call{value: msg.value}("");
+        require(success, "ETH transfer to treasury failed");
+
+        emit TokensMinted(msg.sender, tokensToMint, mintCount);
     }
 
-    connectBtn.onclick = connectWallet;
+    /**
+     * @dev Get remaining mints available globally
+     */
+    function remainingMints() external view returns (uint256) {
+        return TOTAL_MINTS_AVAILABLE - totalMintCount;
+    }
 
-    mintBtn.onclick = async () => {
-      if(!contract) return showToast("Connect your Farcaster wallet first");
-      const count = Number(document.getElementById("mintCount").value);
-      const value = ethers.parseEther((0.00012 * count).toString());
-      try {
-        showToast("Minting...");
-        const tx = await contract.mint(count, { value });
-        await tx.wait();
-        showToast("Mint success!");
+    /**
+     * @dev Get remaining mints available for a specific user
+     */
+    function remainingMintsForUser(address user) external view returns (uint256) {
+        return MAX_MINTS_PER_USER - userMintCount[user];
+    }
 
-        // Auto cast setelah mint
-        sdk.actions.openComposer({
-          text: "I just claimed $GODMODE — free mint! 🔥 https://claim-token-godmode.vercel.app/"
-        });
+    /**
+     * @dev Get total tokens minted (excluding treasury reserve)
+     */
+    function totalMinted() external view returns (uint256) {
+        return totalMintCount * TOKENS_PER_MINT;
+    }
 
-        await updateProgress();
-      } catch(e){
-        console.error(e);
-        showToast("Mint failed");
-      }
-    };
+    /**
+     * @dev Emergency withdrawal function (only owner, for stuck funds)
+     */
+    function emergencyWithdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        require(balance > 0, "No balance to withdraw");
+        
+        (bool success, ) = treasury.call{value: balance}("");
+        require(success, "Emergency withdrawal failed");
+        
+        emit TreasuryWithdrawal(treasury, balance);
+    }
 
-    // 🔄 Auto-connect jika di Farcaster environment
-    connectWallet();
-  </script>
-</body>
-</html>
+    /**
+     * @dev Prevent accidental ETH sends
+     */
+    receive() external payable {
+        revert("Use mint() function to mint tokens");
+    }
+}
