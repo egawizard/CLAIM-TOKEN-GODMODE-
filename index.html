@@ -410,11 +410,53 @@
                     console.log('Frame context:', context);
                 }
                 
-                showStatus('Farcaster Mini App loaded! Connect your wallet.', 'info');
+                // Auto-connect Farcaster wallet
+                await autoConnectFarcasterWallet();
+                
             } catch (error) {
                 console.error('SDK init error:', error);
-                // Continue in standalone mode
-                showStatus('Running in standalone mode', 'info');
+                showStatus('Please open in Farcaster app to connect wallet', 'error');
+            }
+        }
+
+        // Auto-connect Farcaster wallet
+        async function autoConnectFarcasterWallet() {
+            try {
+                if (!frameSDK || !frameSDK.wallet) {
+                    throw new Error('Farcaster wallet not available');
+                }
+
+                showStatus('🔗 Connecting to Farcaster wallet...', 'info');
+
+                // Request accounts from Farcaster wallet
+                const accounts = await frameSDK.wallet.ethProvider.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('No accounts found');
+                }
+
+                userAddress = accounts[0];
+                provider = new ethers.providers.Web3Provider(frameSDK.wallet.ethProvider);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+                // Hide connect section, show mint section
+                document.getElementById('walletSection').style.display = 'none';
+                document.getElementById('mintSection').style.display = 'block';
+                document.getElementById('walletInfo').textContent = 
+                    `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+
+                await updateUserMints();
+                showStatus('✅ Farcaster wallet connected!', 'success');
+
+                console.log('✅ Auto-connected to Farcaster wallet:', userAddress);
+            } catch (error) {
+                console.error('Auto-connect error:', error);
+                showStatus('❌ Failed to connect Farcaster wallet. Please try manually.', 'error');
+                // Show manual connect button as fallback
+                document.getElementById('walletSection').style.display = 'block';
             }
         }
 
@@ -439,72 +481,27 @@
             }
         }
 
-        // Connect Wallet
+        // Manual Connect Wallet (fallback only)
         document.getElementById('connectBtn').addEventListener('click', async () => {
             try {
-                let connectedAddress = null;
-
-                // Try Farcaster wallet provider first
-                if (frameSDK && frameSDK.wallet) {
-                    try {
-                        const result = await frameSDK.wallet.ethProvider.request({
-                            method: 'eth_requestAccounts'
-                        });
-                        connectedAddress = result[0];
-                        provider = new ethers.providers.Web3Provider(frameSDK.wallet.ethProvider);
-                        console.log('✅ Connected via Farcaster wallet');
-                    } catch (e) {
-                        console.log('Farcaster wallet not available:', e);
-                    }
+                // Only try Farcaster wallet
+                if (!frameSDK || !frameSDK.wallet) {
+                    throw new Error('Please open this app in Farcaster to connect your wallet');
                 }
 
-                // Fallback to regular Web3 provider
-                if (!connectedAddress && window.ethereum) {
-                    const accounts = await window.ethereum.request({ 
-                        method: 'eth_requestAccounts' 
-                    });
-                    connectedAddress = accounts[0];
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                showStatus('🔗 Connecting to Farcaster wallet...', 'info');
 
-                    const chainId = await window.ethereum.request({ 
-                        method: 'eth_chainId' 
-                    });
+                const accounts = await frameSDK.wallet.ethProvider.request({
+                    method: 'eth_requestAccounts'
+                });
 
-                    // Switch to Base Mainnet if needed
-                    if (parseInt(chainId) !== BASE_CHAIN_ID) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_switchEthereumChain',
-                                params: [{ chainId: '0x2105' }],
-                            });
-                        } catch (switchError) {
-                            if (switchError.code === 4902) {
-                                await window.ethereum.request({
-                                    method: 'wallet_addEthereumChain',
-                                    params: [{
-                                        chainId: '0x2105',
-                                        chainName: 'Base Mainnet',
-                                        nativeCurrency: {
-                                            name: 'Ethereum',
-                                            symbol: 'ETH',
-                                            decimals: 18
-                                        },
-                                        rpcUrls: ['https://mainnet.base.org'],
-                                        blockExplorerUrls: ['https://basescan.org']
-                                    }]
-                                });
-                            }
-                        }
-                    }
-                    console.log('✅ Connected via Web3 provider');
+                if (!accounts || accounts.length === 0) {
+                    throw new Error('No Farcaster wallet found');
                 }
 
-                if (!connectedAddress) {
-                    throw new Error('No wallet available. Please use Farcaster app or install a Web3 wallet.');
-                }
-
+                userAddress = accounts[0];
+                provider = new ethers.providers.Web3Provider(frameSDK.wallet.ethProvider);
                 signer = provider.getSigner();
-                userAddress = connectedAddress;
                 contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
                 document.getElementById('walletSection').style.display = 'none';
@@ -513,7 +510,7 @@
                     `Connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
 
                 await updateUserMints();
-                showStatus('✅ Wallet connected successfully!', 'success');
+                showStatus('✅ Farcaster wallet connected!', 'success');
             } catch (error) {
                 console.error('Connection error:', error);
                 showStatus('❌ ' + error.message, 'error');
