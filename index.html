@@ -6,15 +6,72 @@
   <title>CLAIM TOKEN $GODMODE — Free Mint</title>
   <meta name="fc:miniapp" content='{"title": "CLAIM TOKEN $GODMODE FREE MINT","description": "Claim $GODMODE Token on Base Mainnet — Free Mint (with small fee)","action": "/","image": "/splash.png"}' />
   <style>
-    body {background: radial-gradient(circle at top left, #8b5cf6 0%, #0b0f14 70%);color: #e6eef8;font-family: Inter, sans-serif;display: flex;justify-content: center;align-items: center;height: 100vh;margin: 0;padding: 20px;}
-    .app {width: 480px;background: rgba(255,255,255,0.05);border-radius: 16px;padding: 24px;box-shadow: 0 8px 30px rgba(0,0,0,0.5);text-align: center;}
-    h1 {font-size: 22px;margin-bottom: 10px;}
-    .muted {opacity: 0.8;font-size: 13px;}
-    button {background: linear-gradient(90deg,#8b5cf6,#06b6d4);border: none;border-radius: 10px;padding: 12px 18px;color: #fff;font-weight: bold;cursor: pointer;margin-top: 10px;}
-    .progress {height: 14px;background: rgba(255,255,255,0.1);border-radius: 10px;overflow: hidden;margin: 12px 0;}
-    .progress > i {display: block;height: 100%;width: 0;background: linear-gradient(90deg,#06b6d4,#60a5fa);transition: width .5s ease;}
-    .toast {position: fixed;bottom: 20px;left: 50%;transform: translateX(-50%);background: #061025;color: white;padding: 10px 14px;border-radius: 8px;display: none;}
-    input[type=number] {width: 80px;text-align: center;border-radius: 8px;border: none;background: rgba(255,255,255,0.1);color: white;padding: 8px;margin-top: 8px;}
+    body {
+      background: radial-gradient(circle at top left, #8b5cf6 0%, #0b0f14 70%);
+      color: #e6eef8;
+      font-family: Inter, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .app {
+      width: 480px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    h1 { font-size: 22px; margin-bottom: 10px; }
+    .muted { opacity: 0.8; font-size: 13px; }
+    button {
+      background: linear-gradient(90deg,#8b5cf6,#06b6d4);
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .progress {
+      height: 14px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .progress > i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg,#06b6d4,#60a5fa);
+      transition: width .5s ease;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #061025;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      display: none;
+    }
+    input[type=number] {
+      width: 80px;
+      text-align: center;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      padding: 8px;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -31,21 +88,94 @@
     <div id="status" class="muted">Not connected</div>
   </div>
   <div class="toast" id="toast"></div>
+
   <script type="module">
     import { sdk } from "https://esm.sh/@farcaster/miniapp-sdk";
     import { ethers } from "https://esm.sh/ethers@6.8.3";
+
+    // ✅ Hilangkan splash screen Farcaster
+    await sdk.actions.ready();
+
     const CONTRACT = "0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305";
     const ABI = [
       {"inputs":[{"internalType":"uint256","name":"mintCount","type":"uint256"}],"name":"mint","outputs":[],"stateMutability":"payable","type":"function"},
       {"inputs":[],"name":"remainingMints","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
     ];
-    const connectBtn=document.getElementById("connect"),mintBtn=document.getElementById("mint"),toast=document.getElementById("toast"),bar=document.getElementById("bar"),progressText=document.getElementById("progressText"),status=document.getElementById("status");
-    let signer,contract;
-    function showToast(msg){toast.textContent=msg;toast.style.display="block";setTimeout(()=>toast.style.display="none",3000);}
-    async function updateProgress(){if(!contract)return;const total=20000;const remaining=await contract.remainingMints();const minted=total-Number(remaining);const pct=(minted/total)*100;bar.style.width=pct+"%";progressText.textContent=`${minted} / ${total} mints`; }
-    async function connectWallet(){await sdk.actions.ready();const provider=await sdk.wallet.getEthereumProvider();if(!provider)return showToast("Open inside Farcaster app");const browserProvider=new ethers.BrowserProvider(provider);signer=await browserProvider.getSigner();const address=await signer.getAddress();status.textContent="Connected: "+address.slice(0,8)+"...";showToast("Wallet connected");contract=new ethers.Contract(CONTRACT,ABI,signer);connectBtn.style.display="none";await updateProgress();}
-    connectBtn.onclick=connectWallet;
-    mintBtn.onclick=async()=>{if(!contract)return showToast("Connect your Farcaster wallet first");const count=Number(document.getElementById("mintCount").value);const value=ethers.parseEther((0.00012*count).toString());showToast("Minting...");const tx=await contract.mint(count,{value});await tx.wait();showToast("Mint success!");sdk.actions.openComposer({text:"I just claimed $GODMODE — free mint! 🔥 https://claim-token-godmode.vercel.app/"});await updateProgress();};
+
+    const connectBtn = document.getElementById("connect"),
+          mintBtn = document.getElementById("mint"),
+          toast = document.getElementById("toast"),
+          bar = document.getElementById("bar"),
+          progressText = document.getElementById("progressText"),
+          status = document.getElementById("status");
+
+    let signer, contract;
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.style.display = "block";
+      setTimeout(()=>toast.style.display="none",3000);
+    }
+
+    async function updateProgress(){
+      if(!contract) return;
+      const total = 20000;
+      try {
+        const remaining = await contract.remainingMints();
+        const minted = total - Number(remaining);
+        const pct = (minted / total) * 100;
+        bar.style.width = pct + "%";
+        progressText.textContent = `${minted} / ${total} mints`;
+      } catch(e){
+        console.error(e);
+      }
+    }
+
+    async function connectWallet(){
+      try {
+        const provider = await sdk.wallet.getEthereumProvider();
+        if(!provider) return showToast("Open inside Farcaster app");
+
+        const browserProvider = new ethers.BrowserProvider(provider);
+        signer = await browserProvider.getSigner();
+        const address = await signer.getAddress();
+        status.textContent = "Connected: " + address.slice(0,8) + "...";
+        showToast("Wallet connected");
+
+        contract = new ethers.Contract(CONTRACT, ABI, signer);
+        connectBtn.style.display = "none";
+        await updateProgress();
+      } catch(e) {
+        console.error(e);
+        showToast("Failed to connect wallet");
+      }
+    }
+
+    connectBtn.onclick = connectWallet;
+
+    mintBtn.onclick = async () => {
+      if(!contract) return showToast("Connect your Farcaster wallet first");
+      const count = Number(document.getElementById("mintCount").value);
+      const value = ethers.parseEther((0.00012 * count).toString());
+      try {
+        showToast("Minting...");
+        const tx = await contract.mint(count, { value });
+        await tx.wait();
+        showToast("Mint success!");
+
+        // Auto cast setelah mint
+        sdk.actions.openComposer({
+          text: "I just claimed $GODMODE — free mint! 🔥 https://claim-token-godmode.vercel.app/"
+        });
+
+        await updateProgress();
+      } catch(e){
+        console.error(e);
+        showToast("Mint failed");
+      }
+    };
+
+    // 🔄 Auto-connect jika di Farcaster environment
     connectWallet();
   </script>
 </body>
