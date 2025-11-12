@@ -1,131 +1,278 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLAIM TOKEN $GODMODE FREE MINT</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0d0e14; color: #fff; }
+        .frame-container { 
+            width: 500px; 
+            height: 262px; 
+            /* This is the standard 1.91:1 Farcaster Frame ratio */
+            background-color: #1a1b26; 
+            border: 4px solid #4f46e5;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.5);
+            margin: auto;
+            position: relative;
+            overflow: hidden;
+            display: flex; /* Ensure the single-file view looks decent too */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+    </style>
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+    <!-- Farcaster Frame Metadata (State 0: Initial Mint View) -->
+    <!-- This is what Farcaster reads when the URL is first cast -->
+    <meta property="fc:frame" content="vNext" />
+    <!-- IMPORTANT: Replace the image URL below with a real hosted image (e.g., a PNG showing the $GODMODE logo and "Free Mint") -->
+    <meta property="fc:frame:image" content="https://claim-token-godmode.vercel.app/godmode_initial_frame_image.png" />
+    <meta property="og:image" content="https://claim-token-godmode.vercel.app/godmode_initial_frame_image.png" />
 
-/**
- * @title GODMODE Token
- * @dev ERC-20 Token for Farcaster Mini App
- * 
- * Tokenomics:
- * - Total Supply: 1,000,000,000 (1B) tokens
- * - Mintable Supply: 900,000,000 (900M) tokens
- * - Treasury Reserve: 100,000,000 (100M) tokens
- * - Tokens per Mint: 45,000 tokens
- * - Total Mints Available: 20,000
- * - Mint Price: 0.00012 ETH (Base Mainnet)
- * - Max Mints per User: 50
- */
-contract GODMODE is ERC20, ReentrancyGuard {
-    // Constants
-    uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 1 billion tokens
-    uint256 public constant MINTABLE_SUPPLY = 900_000_000 * 10**18; // 900 million tokens
-    uint256 public constant TREASURY_RESERVE = 100_000_000 * 10**18; // 100 million tokens
-    uint256 public constant TOKENS_PER_MINT = 45_000 * 10**18; // 45,000 tokens per mint
-    uint256 public constant TOTAL_MINTS_AVAILABLE = 20_000; // 20,000 total mints
-    uint256 public constant MINT_PRICE = 0.00012 ether; // 0.00012 ETH
-    uint256 public constant MAX_MINTS_PER_USER = 50; // Maximum 50 mints per user
+    <!-- Button 1: Mint Transaction -->
+    <meta property="fc:frame:button:1" content="🔥 CLAIM $GODMODE (FREE MINT)" />
+    <meta property="fc:frame:button:1:action" content="tx" />
+    <!-- Target points to the logic that generates the transaction payload. Note: Farcaster wallet connection is automatic. -->
+    <meta property="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/?action=tx&mintCount=1" />
 
-    // Treasury wallet address
-    address public immutable treasury;
-    
-    // Owner address for emergency functions
-    address public immutable owner;
+    <!-- Button 2: View Contract (Link) -->
+    <meta property="fc:frame:button:2" content="View Contract" />
+    <meta property="fc:frame:button:2:action" content="link" />
+    <meta property="fc:frame:button:2:target" content="https://basescan.org/address/0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305" />
 
-    // Minting tracking
-    uint256 public totalMintCount;
-    mapping(address => uint256) public userMintCount;
+    <!-- Post URL: The Frame will post the result of the button click back to itself -->
+    <meta property="fc:frame:post_url" content="https://claim-token-godmode.vercel.app/?action=post_tx_hash" />
 
-    // Events
-    event TokensMinted(address indexed user, uint256 amount, uint256 mintNumber);
-    event TreasuryWithdrawal(address indexed treasury, uint256 amount);
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    // Modifier
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
-        _;
-    }
+    <!-- Main App Container - Renders the content for direct browser access / Fallback -->
+    <div id="app" class="frame-container flex flex-col items-center justify-center rounded-xl p-6 text-center">
+        <h1 class="text-4xl font-extrabold mb-2 text-indigo-400">GODMODE TOKEN FRAME</h1>
+        <p class="text-xl text-gray-300 mb-6">This URL is primarily designed as a Farcaster Frame endpoint.</p>
+        <a href="https://warpcast.com/~/developers/frames" target="_blank" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors">Learn about Frames</a>
+    </div>
 
-    /**
-     * @dev Constructor - Deploys the GODMODE token
-     * Automatically mints 100M treasury reserve to specified treasury address
-     */
-    constructor() ERC20("GODMODE", "GODMODE") {
-        // Set deployer as owner
-        owner = msg.sender;
-        
-        // Treasury address for Base Mainnet
-        treasury = 0xb9AE3cDFA1ca0484E24E465Df7F49aDBd175B642;
-        
-        // Mint treasury reserve directly to treasury wallet
-        _mint(treasury, TREASURY_RESERVE);
-    }
+    <script>
+        // --- CONSTANTS ---
+        const CONTRACT_ADDRESS = "0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305";
+        const CHAIN_ID = "eip155:8453"; // Base Mainnet
+        // MINT_PRICE_WEI is 0.00012 ETH (for 1 mint)
+        const MINT_PRICE_WEI = "120000000000000"; 
+        const MINT_COUNT = 1; 
+        const TOTAL_MINT_LIMIT = 20000;
+        const MOCK_CURRENT_MINTS = 18000; // Mock data for progress bar in static page
 
-    /**
-     * @dev Mint tokens by paying the mint price
-     * @param mintCount Number of times to mint (each mint = 45,000 tokens)
-     */
-    function mint(uint256 mintCount) external payable nonReentrant {
-        require(mintCount > 0, "Mint count must be greater than 0");
-        require(totalMintCount + mintCount <= TOTAL_MINTS_AVAILABLE, "Exceeds total mint limit");
-        require(userMintCount[msg.sender] + mintCount <= MAX_MINTS_PER_USER, "Exceeds user mint limit");
-        require(msg.value == MINT_PRICE * mintCount, "Incorrect ETH amount");
+        // --- UTILITY FUNCTIONS ---
 
-        uint256 tokensToMint = TOKENS_PER_MINT * mintCount;
-        
-        // Update counters
-        totalMintCount += mintCount;
-        userMintCount[msg.sender] += mintCount;
+        /**
+         * Parses the query parameters from the URL.
+         */
+        function getQueryParams() {
+            const params = {};
+            const queryString = window.location.search.substring(1);
+            const regex = /([^&=]+)=([^&]*)/g;
+            let m;
+            while (m = regex.exec(queryString)) {
+                params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+            }
+            return params;
+        }
 
-        // Mint tokens to user
-        _mint(msg.sender, tokensToMint);
+        /**
+         * Constructs the transaction payload JSON object.
+         * @param {number} mintCount The number of mints (default 1).
+         */
+        function createTxPayload(mintCount) {
+            // Function signature for mint(uint256 mintCount) is 0x3d001099
+            const mintCountHex = '0x' + mintCount.toString(16).padStart(64, '0');
+            const data = '0x3d001099' + mintCountHex.substring(2);
 
-        // Transfer ETH to treasury
-        (bool success, ) = treasury.call{value: msg.value}("");
-        require(success, "ETH transfer to treasury failed");
+            const txValue = (BigInt(MINT_PRICE_WEI) * BigInt(mintCount)).toString();
+            
+            // This is the JSON response Farcaster expects for the "tx" action.
+            return {
+                chainId: CHAIN_ID,
+                method: "eth_sendTransaction",
+                params: {
+                    abi: [], 
+                    to: CONTRACT_ADDRESS,
+                    data: data,
+                    value: txValue,
+                },
+            };
+        }
 
-        emit TokensMinted(msg.sender, tokensToMint, mintCount);
-    }
+        /**
+         * Renders the HTML necessary for a Farcaster Frame to interpret a transaction payload (State 1).
+         */
+        function renderTransactionPayload(mintCount) {
+            const payload = createTxPayload(mintCount);
+            
+            // Farcaster clients typically respond to the TX payload itself, but some require 
+            // the transaction metadata in the HTML head. We rely on the JSON output for the Frame.
+            
+            const txMeta = `
+                <meta property="fc:frame" content="vNext" />
+                <meta property="fc:frame:image" content="https://claim-token-godmode.vercel.app/godmode_processing_frame_image.png" />
+                <!-- The post_url here is critical: Farcaster posts the transaction hash here after minting is requested -->
+                <meta property="fc:frame:post_url" content="https://claim-token-godmode.vercel.app/?action=post_tx_hash" />
+                <meta property="fc:frame:button:1" content="Processing..." />
+                <meta property="fc:frame:button:1:action" content="post" />
+            `;
 
-    /**
-     * @dev Get remaining mints available globally
-     */
-    function remainingMints() external view returns (uint256) {
-        return TOTAL_MINTS_AVAILABLE - totalMintCount;
-    }
+            // Overwrite the head with the processing meta tags (optional, for debugging)
+            document.head.innerHTML = txMeta;
 
-    /**
-     * @dev Get remaining mints available for a specific user
-     */
-    function remainingMintsForUser(address user) external view returns (uint256) {
-        return MAX_MINTS_PER_USER - userMintCount[user];
-    }
+            // Output the JSON payload for the Farcaster Frame client
+            document.body.innerHTML = `
+                <pre class="text-white bg-gray-900 p-4 rounded-xl shadow-lg w-full max-w-lg mx-auto">
+                    ${JSON.stringify(payload, null, 2)}
+                </pre>
+            `;
+            document.body.style.backgroundColor = '#0d0e14';
+            document.body.classList.remove('flex'); 
+        }
 
-    /**
-     * @dev Get total tokens minted (excluding treasury reserve)
-     */
-    function totalMinted() external view returns (uint256) {
-        return totalMintCount * TOKENS_PER_MINT;
-    }
+        /**
+         * Renders the HTML for the success state after a transaction is completed (State 2).
+         */
+        function renderSuccessState(txHash) {
+            const successMeta = `
+                <meta property="fc:frame" content="vNext" />
+                <meta property="fc:frame:image" content="https://claim-token-godmode.vercel.app/godmode_success_frame_image.png" />
+                <meta property="og:image" content="https://claim-token-godmode.vercel.app/godmode_success_frame_image.png" />
 
-    /**
-     * @dev Emergency withdrawal function (only owner, for stuck funds)
-     */
-    function emergencyWithdraw() external onlyOwner {
-        uint256 balance = address(this).balance;
-        require(balance > 0, "No balance to withdraw");
-        
-        (bool success, ) = treasury.call{value: balance}("");
-        require(success, "Emergency withdrawal failed");
-        
-        emit TreasuryWithdrawal(treasury, balance);
-    }
+                <!-- Button 1: Autocast button -->
+                <meta property="fc:frame:button:1" content="⚡ Share Mint on Farcaster" />
+                <meta property="fc:frame:button:1:action" content="post_redirect" />
+                <meta property="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/?action=autocast&hash=${txHash}" />
 
-    /**
-     * @dev Prevent accidental ETH sends
-     */
-    receive() external payable {
-        revert("Use mint() function to mint tokens");
-    }
-}
+                <!-- Button 2: View Transaction -->
+                <meta property="fc:frame:button:2" content="View Transaction" />
+                <meta property="fc:frame:button:2:action" content="link" />
+                <meta property="fc:frame:button:2:target" content="https://basescan.org/tx/${txHash}" />
+
+                <meta property="fc:frame:post_url" content="https://claim-token-godmode.vercel.app/" />
+            `;
+            
+            document.head.innerHTML = successMeta;
+
+            document.getElementById('app').innerHTML = `
+                <div class="p-8 text-white bg-green-900/50 border-2 border-green-500 rounded-xl shadow-2xl w-full max-w-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h2 class="text-3xl font-bold mb-2 text-green-300">Mint Successful!</h2>
+                    <p class="text-lg mb-4">You have claimed 45,000 $GODMODE tokens.</p>
+                    <p class="text-sm text-gray-400 break-all mb-4">TX Hash: ${txHash}</p>
+                    <a href="https://basescan.org/tx/${txHash}" target="_blank" class="block w-full text-center px-4 py-2 bg-green-600 hover:bg-green-700 font-semibold rounded-lg transition-colors mt-4">
+                        View Transaction on BaseScan
+                    </a>
+                </div>
+            `;
+        }
+
+        /**
+         * Handles the Autocast/Post Redirect (State 3).
+         */
+        function handleAutocast(txHash) {
+            const castText = encodeURIComponent(`I just claimed 45,000 $GODMODE tokens via the Farcaster Frame! LFG 🚀\n\nTX: https://basescan.org/tx/${txHash}`);
+            const castURL = `https://warpcast.com/~/compose?text=${castText}&embeds[]=${encodeURIComponent(window.location.origin)}`;
+            
+            // The browser view simply shows the intent before redirect
+            document.getElementById('app').innerHTML = `
+                <div class="p-8 text-white bg-indigo-900/50 border-2 border-indigo-500 rounded-xl shadow-2xl w-full max-w-lg">
+                    <h2 class="text-3xl font-bold mb-4 text-indigo-300">Autocast Ready</h2>
+                    <p class="text-lg mb-6">Redirecting you to Farcaster to share your success!</p>
+                    <p class="text-sm text-gray-400 break-all mb-4">TX Hash: ${txHash}</p>
+                    <a href="${castURL}" target="_top" class="block w-full text-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 font-semibold rounded-lg transition-colors mt-4">
+                        Open Farcaster Composer
+                    </a>
+                </div>
+            `;
+            // Redirect the browser window to the cast URL
+            window.top.location.href = castURL;
+        }
+
+        /**
+         * Renders the Initial Frame content dynamically (simulating the Frame image/progress bar).
+         */
+        function renderInitialFrame() {
+            const progressPercentage = (MOCK_CURRENT_MINTS / TOTAL_MINT_LIMIT) * 100;
+            const remainingMints = TOTAL_MINT_LIMIT - MOCK_CURRENT_MINTS;
+
+            // Adjust layout for content rendering
+            const app = document.getElementById('app');
+            app.classList.remove('justify-center');
+            app.classList.add('justify-between', 'items-start');
+            app.style.height = '262px'; // Ensure frame ratio is maintained
+
+            app.innerHTML = `
+                <div class="w-full">
+                    <h2 class="text-2xl font-black mb-1 text-indigo-300 uppercase">CLAIM TOKEN $GODMODE</h2>
+                    <h1 class="text-4xl font-extrabold mb-4 text-white">🔥 FREE MINT IS LIVE!</h1>
+                </div>
+
+                <div class="w-full bg-gray-800 p-4 rounded-lg shadow-inner">
+                    <p class="text-xl font-bold text-gray-200 mb-2">Progress: ${MOCK_CURRENT_MINTS.toLocaleString()} / ${TOTAL_MINT_LIMIT.toLocaleString()} Mints</p>
+                    <div class="w-full bg-gray-700 rounded-full h-4 mb-2">
+                        <div class="bg-indigo-500 h-4 rounded-full transition-all duration-500" style="width: ${progressPercentage}%;"></div>
+                    </div>
+                    <p class="text-sm text-gray-400 font-semibold">${remainingMints.toLocaleString()} Mints Remaining. Max 50x per User.</p>
+                </div>
+                
+                <div class="w-full text-sm text-center pt-2 text-gray-400">
+                    Network: Base Mainnet | Mint Cost: 0.00012 ETH (Gas/Transaction Fee)
+                </div>
+            `;
+        }
+
+        /**
+         * Main function to route the Farcaster Frame request.
+         * NOTE: This single file acts as a Frame Server/Router.
+         */
+        function handleFrameRequest() {
+            const params = getQueryParams();
+            const action = params.action;
+            const txHash = params.hash;
+            const mintCount = parseInt(params.mintCount || MINT_COUNT);
+
+            if (action === 'tx') {
+                // State 1: Farcaster requests the transaction payload JSON (Frame is expecting a TX)
+                renderTransactionPayload(mintCount);
+                
+            } else if (action === 'post_tx_hash') {
+                // State 2: Farcaster posts the transaction hash after the user completes the action.
+                // NOTE: In a real server, you would extract the tx_hash from the POST body here.
+                // For this single HTML file, we simulate a mock hash or rely on the query parameter 'hash' if passed.
+                
+                // IMPORTANT: The Farcaster Frame Client sends the tx hash in the POST body.
+                // For a static HTML file hosted on Vercel, this POST request will fail or return the initial state.
+                // TO MAKE THIS WORK RELIABLY ON VERCELL, you must use a Vercel Edge Function or Serverless Function 
+                // to handle the POST request, read the body for 'transactionId', and return the Success Frame Metadata.
+                
+                // For demonstration, we assume a mock hash to show the success state:
+                const mockHash = "0xSIMULATED_SUCCESS_" + Math.random().toString(16).substring(2, 66);
+                renderSuccessState(txHash || mockHash);
+            
+            } else if (action === 'autocast' && txHash) {
+                // State 3: User clicked the share button, redirect to Farcaster composer.
+                handleAutocast(txHash);
+            
+            } else {
+                // State 0: Initial cast or direct browser access
+                renderInitialFrame();
+            }
+        }
+
+        // --- EXECUTION ---
+        window.onload = handleFrameRequest;
+    </script>
+</body>
+</html>
