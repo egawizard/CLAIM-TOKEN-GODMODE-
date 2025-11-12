@@ -1,35 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CLAIM TOKEN $GODMODE - FREE MINT</title>
-
-  <!-- Farcaster Mini App Meta -->
-  <meta name="fc:miniapp" content='{"title":"CLAIM TOKEN $GODMODE FREE MINT","action_url":"https://claim-token-godmode.vercel.app/","image":"https://claim-token-godmode.vercel.app/hero.jpg","description":"Claim your free $GODMODE token on Base. One-click mint for Farcaster users."}'>
-
-  <!-- OpenGraph / Preview Meta -->
-  <meta property="og:title" content="CLAIM TOKEN $GODMODE — FREE MINT">
-  <meta property="og:description" content="Free mint for Farcaster users — max 50 per wallet. Built on Base.">
-  <meta property="og:image" content="https://claim-token-godmode.vercel.app/hero.jpg">
-  <meta property="og:url" content="https://claim-token-godmode.vercel.app/">
-  <meta name="twitter:card" content="summary_large_image">
-
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLAIM TOKEN $GODMODE</title>
+  <meta property="og:title" content="CLAIM TOKEN $GODMODE">
+  <meta property="og:description" content="Free mint for Farcaster users (Base Mainnet)">
+  <meta property="og:image" content="https://claim-token-godmode.vercel.app/public/banner.png">
+  <meta name="theme-color" content="#7d4eff">
+  <script src="https://unpkg.com/ethers@6.11.0/dist/ethers.umd.min.js"></script>
+  <script src="https://unpkg.com/@farcaster/frame-sdk"></script>
+  <style>
+    body {
+      background-color: #0d0d0d;
+      color: white;
+      font-family: 'Inter', sans-serif;
+      text-align: center;
+      padding: 40px 10px;
+    }
+    .card {
+      background: #111;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 0 10px rgba(125, 78, 255, 0.4);
+      max-width: 400px;
+      margin: auto;
+    }
+    .logo {
+      width: 100px;
+      border-radius: 50%;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .connect-btn {
+      background: #333;
+      color: white;
+      margin-bottom: 10px;
+    }
+    .mint-btn {
+      background: #7d4eff;
+      color: white;
+    }
+    .mint-btn:disabled {
+      background: #333;
+      cursor: not-allowed;
+    }
+    .progress {
+      width: 100%;
+      height: 6px;
+      background: #333;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    .bar {
+      width: 0%;
+      height: 100%;
+      background: #7d4eff;
+      transition: width 0.3s;
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ccc;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <img src="hero.jpg" class="banner" alt="$GODMODE banner">
-    <h1>CLAIM TOKEN $GODMODE</h1>
+  <div class="card">
+    <img src="https://claim-token-godmode.vercel.app/public/banner.png" class="logo">
+    <h2>CLAIM TOKEN $GODMODE</h2>
     <p>Free mint for Farcaster users (Base Mainnet)</p>
-
-    <button id="connectButton">Connect Wallet</button>
-    <button id="mintButton" disabled>Mint $GODMODE</button>
-
-    <p id="status"></p>
+    <button id="connectBtn" class="connect-btn">Connect Wallet</button>
+    <button id="mintBtn" class="mint-btn" disabled>Mint $GODMODE</button>
+    <div class="progress"><div class="bar" id="progressBar"></div></div>
+    <div class="status" id="statusText"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    const frame = window.FrameSDK;
+    const connectBtn = document.getElementById("connectBtn");
+    const mintBtn = document.getElementById("mintBtn");
+    const bar = document.getElementById("progressBar");
+    const statusText = document.getElementById("statusText");
+
+    let provider, signer, userAddress;
+    const CONTRACT_ADDRESS = "0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305";
+    const ABI = [
+      "function mint(address to, uint256 amount) public returns (bool)"
+    ];
+
+    async function initFarcaster() {
+      try {
+        await frame.ready();
+        console.log("Frame ready ✅");
+      } catch (e) {
+        console.warn("Farcaster SDK not detected");
+      }
+    }
+
+    connectBtn.onclick = async () => {
+      try {
+        if (frame?.ethereum) {
+          provider = new ethers.BrowserProvider(frame.ethereum);
+        } else if (window.ethereum) {
+          provider = new ethers.BrowserProvider(window.ethereum);
+        } else {
+          alert("No wallet provider found.");
+          return;
+        }
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        connectBtn.textContent = "Connected: " + userAddress.slice(0,6) + "...";
+        mintBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    mintBtn.onclick = async () => {
+      try {
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        bar.style.width = "30%";
+        statusText.textContent = "Minting in progress...";
+        const tx = await contract.mint(userAddress, ethers.parseUnits("1", 18));
+        bar.style.width = "70%";
+        await tx.wait();
+        bar.style.width = "100%";
+        statusText.textContent = "✅ Mint successful!";
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = "❌ Mint failed.";
+        bar.style.width = "0%";
+      }
+    };
+
+    initFarcaster();
+  </script>
 </body>
 </html>
