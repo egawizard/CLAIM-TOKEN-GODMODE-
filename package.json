@@ -1,0 +1,13 @@
+{
+  "name": "claim-token-godmode",
+  "version": "1.0.0",
+  "description": "GODMODE Token Minting on Base Mainnet",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build needed'"
+  },
+  "keywords": ["farcaster", "frame", "nft", "base", "web3"],
+  "author": "egawizard",
+  "license": "MIT"
+}
