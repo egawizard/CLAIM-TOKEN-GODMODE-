@@ -308,7 +308,7 @@
             </div>
 
             <div class="wallet-info" id="walletInfo">
-                📱 Connecting to Farcaster...
+                📱 Initializing...
             </div>
 
             <div class="mint-controls">
@@ -335,9 +335,9 @@
     </div>
 
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk@0.1.0/dist/index.js"></script>
-    
-    <script>
+    <script type="module">
+        import sdk from "https://esm.sh/@farcaster/frame-sdk@0.2.4";
+
         const CONTRACT_ADDRESS = '0xfe0b0148A535ab66F83e19756A20A0b9fCAF1305';
         const MINT_PRICE = '0.00012';
         const BASE_CHAIN_ID = 8453;
@@ -350,47 +350,39 @@
             "function remainingMintsForUser(address) external view returns (uint256)"
         ];
 
-        let sdk, provider, signer, contract, userAddress, context;
+        let provider, signer, contract, userAddress, context;
 
-        // Initialize Farcaster SDK
-        async function initFarcasterSDK() {
+        // CRITICAL: Call ready() immediately
+        (async function initSDK() {
             try {
-                // Check if running in Farcaster
-                if (typeof window.FrameSDK === 'undefined') {
-                    showAlert('⚠️ Please open this in Farcaster app', 'info');
-                    // Fallback to regular web3
-                    await initWeb3();
-                    return;
-                }
-
-                sdk = window.FrameSDK;
+                // Call ready first - this is REQUIRED by Farcaster
                 await sdk.actions.ready();
                 
-                context = await sdk.context;
+                console.log('SDK ready called successfully');
+                showAlert('✅ Farcaster SDK initialized!', 'success');
                 
-                showAlert('✅ Connected to Farcaster!', 'success');
+                // Get context
+                context = sdk.context;
                 
-                // Get user's address from Farcaster context
                 if (context && context.user) {
-                    const fid = context.user.fid;
                     document.getElementById('walletInfo').innerHTML = 
-                        `<strong>✅ Farcaster User:</strong> FID ${fid}`;
+                        `<strong>✅ Farcaster FID:</strong> ${context.user.fid}`;
                 }
 
-                // Initialize Web3 provider for contract interaction
+                // Initialize Web3
                 await initWeb3();
                 
             } catch (error) {
-                console.error('Farcaster SDK init error:', error);
-                showAlert('Using standard Web3 mode', 'info');
+                console.error('SDK initialization error:', error);
+                showAlert('⚠️ Using standard Web3 mode', 'info');
                 await initWeb3();
             }
-        }
+        })();
 
         async function initWeb3() {
             try {
                 if (typeof window.ethereum === 'undefined') {
-                    showAlert('Please install a Web3 wallet', 'error');
+                    showAlert('Please install a Web3 wallet or use Farcaster app', 'info');
                     return;
                 }
 
@@ -410,7 +402,6 @@
                 
             } catch (error) {
                 console.error('Web3 init error:', error);
-                showAlert('Failed to connect wallet', 'error');
             }
         }
 
@@ -459,11 +450,11 @@
             } catch (error) {
                 console.error('Error loading contract data:', error);
                 document.getElementById('remainingMints').textContent = '---';
-                document.getElementById('progressText').textContent = 'Unable to load';
+                document.getElementById('progressText').textContent = 'Connect wallet';
             }
         }
 
-        function increaseMint() {
+        window.increaseMint = function() {
             const input = document.getElementById('mintAmount');
             if (parseInt(input.value) < 50) {
                 input.value = parseInt(input.value) + 1;
@@ -471,7 +462,7 @@
             }
         }
 
-        function decreaseMint() {
+        window.decreaseMint = function() {
             const input = document.getElementById('mintAmount');
             if (parseInt(input.value) > 1) {
                 input.value = parseInt(input.value) - 1;
@@ -485,7 +476,7 @@
             document.getElementById('totalCost').textContent = totalCost;
         }
 
-        async function mintTokens() {
+        window.mintTokens = async function() {
             const mintBtn = document.getElementById('mintBtn');
             const amount = parseInt(document.getElementById('mintAmount').value);
 
@@ -521,7 +512,7 @@
                 console.error('Minting error:', error);
                 let errorMsg = 'Minting failed';
                 if (error.message.includes('user rejected')) {
-                    errorMsg = 'Transaction cancelled by user';
+                    errorMsg = 'Transaction cancelled';
                 } else if (error.message.includes('insufficient funds')) {
                     errorMsg = 'Insufficient ETH balance';
                 }
@@ -533,15 +524,16 @@
         }
 
         function shareToFarcaster(tokens) {
-            const text = `Just minted ${tokens.toLocaleString()} $GODMODE tokens! 🚀\n\nJoin the revolution:\nhttps://claim-token-godmode.vercel.app\n\n#GODMODE #Farcaster`;
+            const text = `Just minted ${tokens.toLocaleString()} $GODMODE tokens! 🚀\n\nJoin: https://claim-token-godmode.vercel.app\n\n#GODMODE`;
+            const castUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
             
-            if (sdk && sdk.actions && sdk.actions.openUrl) {
-                // Use Farcaster SDK to compose cast
-                const castUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
-                sdk.actions.openUrl(castUrl);
-            } else {
-                // Fallback
-                const castUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
+            try {
+                if (sdk && sdk.actions && sdk.actions.openUrl) {
+                    sdk.actions.openUrl(castUrl);
+                } else {
+                    window.open(castUrl, '_blank');
+                }
+            } catch (e) {
                 window.open(castUrl, '_blank');
             }
         }
@@ -558,11 +550,6 @@
                 alert.remove();
             }, 5000);
         }
-
-        // Initialize on page load
-        window.addEventListener('load', () => {
-            initFarcasterSDK();
-        });
 
         // Update contract data every 30 seconds
         setInterval(() => {
