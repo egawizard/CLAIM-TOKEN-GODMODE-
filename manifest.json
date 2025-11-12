@@ -1,10 +1,13 @@
 {
-  "name": "GODMODE Token Mint",
-  "version": "1.0.0",
-  "icon": "https://claim-token-godmode.vercel.app/icon.png",
-  "splash": {
-    "image_url": "https://claim-token-godmode.vercel.app/splash.png",
-    "background_color": "#667eea"
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEyMzQ1LCJ0eXBlIjoiY3VzdG9keSIsImtleSI6IjB4..." 
   },
-  "home_url": "https://claim-token-godmode.vercel.app/"
+  "frame": {
+    "version": "next",
+    "name": "GODMODE Token Mint",
+    "iconUrl": "https://claim-token-godmode.vercel.app/icon.png",
+    "splashImageUrl": "https://claim-token-godmode.vercel.app/splash.png",
+    "splashBackgroundColor": "#667eea",
+    "homeUrl": "https://claim-token-godmode.vercel.app/"
+  }
 }
