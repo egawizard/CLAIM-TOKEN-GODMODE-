@@ -383,15 +383,28 @@
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script type="module">
         import sdk from 'https://esm.sh/@farcaster/frame-sdk@0.1.1';
-        window.frameSDK = sdk;
         
-        sdk.actions.ready().then(() => {
-            console.log('✅ Farcaster SDK ready');
-            window.dispatchEvent(new Event('farcaster-ready'));
-        }).catch(err => {
-            console.log('Running in standalone mode');
-            window.dispatchEvent(new Event('farcaster-ready'));
-        });
+        // Initialize SDK immediately
+        (async () => {
+            try {
+                window.frameSDK = sdk;
+                
+                // Get context first to check if we're in a frame
+                const context = await sdk.context;
+                console.log('Frame context:', context);
+                
+                // Call ready() to signal we're ready
+                await sdk.actions.ready();
+                console.log('✅ Farcaster SDK ready');
+                
+                window.isFarcasterFrame = true;
+                window.dispatchEvent(new Event('farcaster-ready'));
+            } catch (err) {
+                console.log('Running in standalone mode:', err);
+                window.isFarcasterFrame = false;
+                window.dispatchEvent(new Event('farcaster-ready'));
+            }
+        })();
     </script>
     
     <script>
