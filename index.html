@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CLAIM TOKEN $GODMODE - FREE MINT</title>
+    <title>CLAIM TOKEN GODMODE - FREE MINT</title>
     
-    <!-- Farcaster Frame Meta Tags - FIXED FORMAT -->
     <meta name="fc:frame" content="vNext">
     <meta name="fc:frame:image" content="https://claim-token-godmode.vercel.app/og.png">
     <meta name="fc:frame:button:1" content="Launch Mint App">
     <meta name="fc:frame:button:1:action" content="link">
     <meta name="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/app.html">
     
-    <!-- Open Graph -->
-    <meta property="og:title" content="CLAIM TOKEN $GODMODE - FREE MINT">
-    <meta property="og:description" content="Mint $GODMODE tokens on Base Mainnet! 1B total supply, 50x max per user!">
+    <meta property="og:title" content="CLAIM TOKEN GODMODE - FREE MINT">
+    <meta property="og:description" content="Mint GODMODE tokens on Base Mainnet! 1B total supply, 50x max per user!">
     <meta property="og:image" content="https://claim-token-godmode.vercel.app/og.png">
     <meta property="og:url" content="https://claim-token-godmode.vercel.app">
     
@@ -26,7 +24,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -39,12 +37,6 @@
             text-align: center;
             padding: 40px;
             max-width: 600px;
-            animation: fadeIn 0.6s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         
         h1 {
@@ -59,12 +51,11 @@
         .subtitle {
             font-size: 24px;
             margin-bottom: 40px;
-            opacity: 0.95;
         }
         
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
             margin-bottom: 40px;
         }
@@ -72,19 +63,19 @@
         .stat-box {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
-            padding: 20px;
+            padding: 25px;
             border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .stat-label {
             font-size: 12px;
-            opacity: 0.8;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             text-transform: uppercase;
         }
         
         .stat-value {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 700;
             color: #ffd700;
         }
@@ -98,33 +89,25 @@
             border-radius: 16px;
             font-size: 24px;
             font-weight: 900;
-            transition: all 0.3s;
-            box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4);
             text-transform: uppercase;
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(255, 215, 0, 0.6);
         }
         
         .loading {
             margin-top: 25px;
-            opacity: 0.7;
             font-size: 14px;
         }
         
         @media (max-width: 600px) {
             h1 { font-size: 48px; }
             .subtitle { font-size: 20px; }
-            .btn { padding: 18px 50px; font-size: 20px; }
+            .stats { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>$GODMODE</h1>
-        <p class="subtitle">🔥 FREE MINT ON BASE MAINNET 🔥</p>
+        <h1>GODMODE</h1>
+        <p class="subtitle">FREE MINT ON BASE MAINNET</p>
         
         <div class="stats">
             <div class="stat-box">
@@ -132,26 +115,28 @@
                 <div class="stat-value">1B</div>
             </div>
             <div class="stat-box">
+                <div class="stat-label">Max Per User</div>
+                <div class="stat-value">50x</div>
+            </div>
+            <div class="stat-box">
                 <div class="stat-label">Per Mint</div>
                 <div class="stat-value">45K</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Max/User</div>
-                <div class="stat-value">50x</div>
-            </div>
-            <div class="stat-box">
                 <div class="stat-label">Cost</div>
-                <div class="stat-value">FREE*</div>
+                <div class="stat-value">FREE</div>
             </div>
         </div>
         
-        <a href="app.html" class="btn">🚀 LAUNCH APP</a>
+        <a href="app.html" class="btn">LAUNCH APP</a>
         
-        <p class="loading">⏳ Redirecting...</p>
+        <p class="loading">Redirecting to mint app...</p>
     </div>
     
     <script>
-        setTimeout(() => window.location.href = 'app.html', 2000);
+        setTimeout(function() {
+            window.location.href = 'app.html';
+        }, 2000);
     </script>
 </body>
 </html>
