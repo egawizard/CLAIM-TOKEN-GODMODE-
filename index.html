@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CLAIM TOKEN $GODMODE - FREE MINT</title>
     
-    <!-- Farcaster Frame Meta Tags -->
+    <!-- Farcaster Frame Meta Tags - FIXED FORMAT -->
     <meta name="fc:frame" content="vNext">
-    <meta name="fc:frame:image" content="https://opengraph.githubassets.com/1/claim-token-godmode/claim-token-godmode">
-    <meta name="fc:frame:button:1" content="Launch Mint">
+    <meta name="fc:frame:image" content="https://claim-token-godmode.vercel.app/og.png">
+    <meta name="fc:frame:button:1" content="Launch Mint App">
     <meta name="fc:frame:button:1:action" content="link">
     <meta name="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/app.html">
     
-    <!-- Alternative: Use your uploaded image from screenshot -->
-    <!-- If you have the image URL from your Vercel deployment, replace the image URL above -->
+    <!-- Open Graph -->
+    <meta property="og:title" content="CLAIM TOKEN $GODMODE - FREE MINT">
+    <meta property="og:description" content="Mint $GODMODE tokens on Base Mainnet! 1B total supply, 50x max per user!">
+    <meta property="og:image" content="https://claim-token-godmode.vercel.app/og.png">
+    <meta property="og:url" content="https://claim-token-godmode.vercel.app">
     
     <style>
         * {
@@ -51,12 +54,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 900;
-            animation: glow 2s ease-in-out infinite;
-        }
-        
-        @keyframes glow {
-            0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5)); }
-            50% { filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8)); }
         }
         
         .subtitle {
@@ -67,7 +64,7 @@
         
         .stats {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
         }
@@ -75,27 +72,19 @@
         .stat-box {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
-            padding: 25px;
+            padding: 20px;
             border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s;
-        }
-        
-        .stat-box:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 215, 0, 0.5);
         }
         
         .stat-label {
             font-size: 12px;
             opacity: 0.8;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
         
         .stat-value {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
             color: #ffd700;
         }
@@ -112,7 +101,6 @@
             transition: all 0.3s;
             box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4);
             text-transform: uppercase;
-            cursor: pointer;
         }
         
         .btn:hover {
@@ -124,19 +112,12 @@
             margin-top: 25px;
             opacity: 0.7;
             font-size: 14px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 0.4; }
         }
         
         @media (max-width: 600px) {
             h1 { font-size: 48px; }
             .subtitle { font-size: 20px; }
             .btn { padding: 18px 50px; font-size: 20px; }
-            .stats { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -151,12 +132,12 @@
                 <div class="stat-value">1B</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Max Per User</div>
-                <div class="stat-value">50x</div>
-            </div>
-            <div class="stat-box">
                 <div class="stat-label">Per Mint</div>
                 <div class="stat-value">45K</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Max/User</div>
+                <div class="stat-value">50x</div>
             </div>
             <div class="stat-box">
                 <div class="stat-label">Cost</div>
@@ -166,13 +147,11 @@
         
         <a href="app.html" class="btn">🚀 LAUNCH APP</a>
         
-        <p class="loading">⏳ Redirecting to mint app...</p>
+        <p class="loading">⏳ Redirecting...</p>
     </div>
     
     <script>
-        setTimeout(() => {
-            window.location.href = 'app.html';
-        }, 2000);
+        setTimeout(() => window.location.href = 'app.html', 2000);
     </script>
 </body>
 </html>
