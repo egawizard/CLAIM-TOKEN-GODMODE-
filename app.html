@@ -7,17 +7,17 @@
     
     <!-- Farcaster Frame Meta Tags -->
     <meta property="fc:frame" content="vNext">
-    <meta property="fc:frame:image" content="https://claim-token-godmode.vercel.app/frame.png">
+    <meta property="fc:frame:image" content="https://claim-token-godmode.netlify.app/frame.png">
     <meta property="fc:frame:image:aspect_ratio" content="1.91:1">
     <meta property="fc:frame:button:1" content="🚀 MINT NOW">
     <meta property="fc:frame:button:1:action" content="link">
-    <meta property="fc:frame:button:1:target" content="https://claim-token-godmode.vercel.app/app">
-    <meta property="fc:frame:post_url" content="https://claim-token-godmode.vercel.app/api/frame">
+    <meta property="fc:frame:button:1:target" content="https://claim-token-godmode.netlify.app/app">
+    <meta property="fc:frame:post_url" content="https://claim-token-godmode.netlify.app/api/frame">
     
     <!-- Open Graph -->
     <meta property="og:title" content="CLAIM TOKEN $GODMODE - FREE MINT">
     <meta property="og:description" content="Mint $GODMODE tokens on Base Mainnet. 1B total supply, 50x max per user!">
-    <meta property="og:image" content="https://claim-token-godmode.vercel.app/frame.png">
+    <meta property="og:image" content="https://claim-token-godmode.netlify.app/frame.png">
     
     <style>
         * {
@@ -874,7 +874,7 @@
             const text = encodeURIComponent(
                 `Just minted ${(currentMintAmount * TOKENS_PER_MINT).toLocaleString()} $GODMODE tokens! 🚀\n\nJoin the FREE MINT now on Base Mainnet!`
             );
-            const url = encodeURIComponent('https://claim-token-godmode.vercel.app/');
+            const url = encodeURIComponent('https://claim-token-godmode.netlify.app/');
             const castUrl = `https://warpcast.com/~/compose?text=${text}&embeds[]=${url}`;
             
             if (window.frameSDK && window.frameSDK.actions && window.frameSDK.actions.openUrl) {
@@ -916,3 +916,4 @@
     </script>
 </body>
 </html>
+
